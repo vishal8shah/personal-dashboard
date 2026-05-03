@@ -848,6 +848,7 @@ body.theme-light .drill-overlay { background: rgba(43, 34, 24, 0.4); }
 <!-- GREETING -->
 <section class="card c-greeting">
   <div class="card-label"><span class="num">02</span> Session <span class="divider"></span><span class="mono dim" id="clockInline">—</span></div>
+  <button class="regen-btn" data-regen="greeting-blurb" title="Regenerate">↻</button>
   <div class="greet-date">Friday · 1 May · AEST</div>
   <h1 class="serif-h1" style="margin: 10px 0 12px;">Good morning,<br/><span class="serif-italic" style="color: var(--accent);">Vish.</span></h1>
   <div class="serif live-cell" data-live="greeting-blurb" style="font-size: 15.5px; font-weight: 300; color: var(--text-2); font-style: italic; line-height: 1.45; max-width: 480px;">
@@ -1827,12 +1828,80 @@ function getLiveCache(key) {
 }
 function setLiveCache(key, html) { localStorage.setItem(liveCacheKey(key), html); }
 
+// =============================================
+// FALLBACK VARIANTS — used when window.claude is unavailable (e.g. GitHub Pages)
+// or when a generation fails. Picked deterministically by day-of-year so the
+// dashboard feels curated rather than dead, and the regen button cycles through.
+// =============================================
+const FALLBACKS = {
+  'greeting-blurb': [
+    'Markets quiet after Anzac Day. Three tasks planned. A Saudi GP tonight. The weather warms through the afternoon.',
+    'Spring is leaning warm in Schofields. NVDA carries the book. Two interviews on the calendar — light afternoon.',
+    'A quiet open. The portfolio held overnight. Coffee, then deep work on the agent-mesh refactor until lunch.',
+    'Cooler morning, clearer head. Three commits queued for review. A property walk-through after standup.',
+    'Sydney softens into autumn. Markets mixed but the long view holds. Mum\'s birthday this Saturday — book the flowers.',
+    'Rain on the roof, kettle on. Light calendar. PLTR ran late yesterday — read the post-mortem before opening positions.',
+    'Crisp, bright, finally yours for an hour before the day starts. F1 practice tonight. The book on the table is still waiting.',
+    'A patient day. RBA held rates. Index funds doing what index funds do. Lunch with Priya.',
+    'Half-light at six. The repo has 14 unread PR comments. Coffee then triage then the big block of work.',
+    'A working morning, nothing more. Markets boring on purpose. Reading: Chapter 6 of <em>The Psychology of Money</em>.',
+    'Schofields warming through to twenty-two. One change window at fourteen-hundred. Otherwise — yours to spend.',
+    'Friday softens early. The week behind, the weekend ahead. Begin with the hardest thing on the list.',
+  ],
+  'market-summary': [
+    'NVDA carried the book — Jensen\'s keynote shifted analyst PTs to <span class="acc">$180+</span>. PLTR followed on government-contract tailwind. <span class="serif-italic">TSLA softened</span> after the delivery miss; the position can wait. CBA edged up; the AU book is doing its quiet work.',
+    'A balanced session. <span class="acc">MSFT +0.4%</span> on cloud signal, <span class="acc">VGS.AX +0.6%</span> with the global tilt. <span class="serif-italic">BHP soft</span> on iron ore — nothing to do. The compound is doing more work than the trades.',
+    'Boring, in the best sense. <span class="acc">VAS.AX +0.3%</span>, CBA flat, NVDA gave back yesterday\'s pop. <span class="serif-italic">PLTR dragged half a percent</span> — still up 230% on cost basis. Rate decision Tuesday is the real signal.',
+    'Risk-on day. <span class="acc">NVDA +2.1%</span>, <span class="acc">PLTR +3.4%</span>, MSFT joining late. <span class="serif-italic">TSLA still searching for a floor</span>. Watch the AUD — a soft print would lift the AU book without you doing anything.',
+    'A red day for the AU book. <span class="serif-italic">CBA -0.8%, BHP -1.2%</span>. The US side held: NVDA flat, MSFT slightly green. <span class="acc">VGS.AX +0.2%</span>. Diversification earned its keep.',
+    'Earnings tomorrow, positioning today. <span class="acc">NVDA bid into the print</span>, MSFT quiet. <span class="serif-italic">PLTR sold off into options expiry</span> — recovers most weeks. Hold.',
+    'Green across the board. <span class="acc">+1.4% on the day</span>, ~<span class="acc">$8,200</span> in unrealised. <span class="serif-italic">Nothing to do</span> — these are the days where discipline looks like sitting still.',
+    'Choppy session. NVDA opened up, faded into close. <span class="acc">CBA +0.6%</span>, <span class="acc">VAS.AX +0.4%</span>. <span class="serif-italic">TSLA still a question mark</span> — three quarters of softness now. Reconsider sizing.',
+    'Quiet macro. RBA held. Yields drifted. <span class="acc">VGS.AX +0.3%</span>. <span class="serif-italic">NVDA digesting</span> after the keynote pop. Best day to do nothing in a week.',
+    'PLTR carried — <span class="acc">+4.1%</span> on the new Army contract. <span class="serif-italic">NVDA soft on profit-taking</span>, MSFT flat. The AU book held. The book is +47% YTD; the work is not adding more, it\'s not selling.',
+    'Drift higher. <span class="acc">+0.6% on the day</span>. NVDA, MSFT, VGS.AX all green; <span class="serif-italic">BHP weighing</span> as iron ore prices ease. Earnings season starts next week — read the calendar.',
+    'A clean session. <span class="acc">NVDA +1.2%</span>, <span class="acc">MSFT +0.7%</span>. <span class="serif-italic">PLTR took a breather</span> after the run. AU close strong: CBA, VAS.AX, VGS.AX all up. The compound machine, working.',
+  ],
+  'reflection': [
+    '"Compounding works in every direction — money, knowledge, relationships, regret. Choose what you want to compound, daily."',
+    '"The work that matters is rarely the work that\'s loud. Show up, do the small thing well, leave."',
+    '"Wealth is the gap between what you earn and what you need. Most days, the gap is a choice."',
+    '"You don\'t need to be right today. You need to still be in the game in twenty years."',
+    '"Patience is a strategy, not a personality trait. It can be built."',
+    '"The portfolio is downstream of the calendar. Protect deep work; the rest follows."',
+    '"Read slowly. Build slowly. Decide quickly. Reverse on demand."',
+    '"A good day is one you\'d be willing to repeat for ten thousand more."',
+    '"The market gives you back what you bring to it — minus your worst impulses."',
+    '"Family compounds quietly. So does silence at the dinner table. Choose."',
+    '"You can be early, you can be right, you can be lucky. Two of the three is plenty."',
+    '"What gets attention gets better. What gets measured gets gamed. Choose carefully what you measure."',
+  ],
+};
+// day-of-year — picks the same variant for a given date, rotates across the year
+function dayOfYear() {
+  const d = new Date();
+  const start = new Date(d.getFullYear(), 0, 0);
+  return Math.floor((d - start) / 86400000);
+}
+function pickFallback(key, offset = 0) {
+  const list = FALLBACKS[key];
+  if (!list || !list.length) return null;
+  return list[(dayOfYear() + offset) % list.length];
+}
+
 async function fillLive(key, force = false) {
   const el = document.querySelector('[data-live="' + key + '"]');
   if (!el) return;
   if (!force) {
     const cached = getLiveCache(key);
     if (cached) { el.innerHTML = cached; return; }
+  }
+  // No live Claude available? Use fallback variant for the day.
+  if (!window.claude || !window.claude.complete) {
+    const offset = +(localStorage.getItem('vish-fb-off-' + key) || 0);
+    const text = pickFallback(key, offset);
+    if (text) { el.innerHTML = text; setLiveCache(key, text); }
+    return;
   }
   const cfg = LIVE_PROMPTS[key]; if (!cfg) return;
   const { system, user } = cfg();
@@ -1845,10 +1914,13 @@ async function fillLive(key, force = false) {
     let clean = String(out || '').trim();
     // strip markdown code fences if Claude wrapped output
     clean = clean.replace(/^```(?:html|HTML)?\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
+    if (!clean) throw new Error('empty');
     el.innerHTML = clean;
     setLiveCache(key, clean);
   } catch (e) {
-    console.warn('live cell failed', key, e);
+    console.warn('live cell failed, using fallback', key, e);
+    const text = pickFallback(key);
+    if (text) { el.innerHTML = text; setLiveCache(key, text); }
   } finally {
     el.classList.remove('loading');
   }
@@ -1864,6 +1936,11 @@ document.querySelectorAll('[data-regen]').forEach(btn => {
     const k = btn.dataset.regen;
     btn.classList.add('spin');
     localStorage.removeItem(liveCacheKey(k));
+    // when offline, advance the fallback offset so user cycles to the next variant
+    if (!window.claude || !window.claude.complete) {
+      const cur = +(localStorage.getItem('vish-fb-off-' + k) || 0);
+      localStorage.setItem('vish-fb-off-' + k, String(cur + 1));
+    }
     await fillLive(k, true);
     setTimeout(() => btn.classList.remove('spin'), 400);
   });
