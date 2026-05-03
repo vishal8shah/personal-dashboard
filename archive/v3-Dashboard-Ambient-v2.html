@@ -1,0 +1,1683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1440" />
+<title>Vish · Ambient</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script type="application/json" id="tweak-defaults">
+/*EDITMODE-BEGIN*/{
+  "theme": "light",
+  "accent": "amber"
+}/*EDITMODE-END*/
+</script>
+<style>
+:root {
+  --bg: #1A140C;
+  --bg-2: #241B10;
+  --panel: #2A1F13;
+  --panel-hi: #33281A;
+  --border: rgba(212, 180, 131, 0.09);
+  --border-hi: rgba(212, 180, 131, 0.18);
+  --text: #F0E6D2;
+  --text-2: #D4B483;
+  --text-dim: #8F7A55;
+  --text-mute: #5C4E36;
+  --accent: #E8944A;
+  --accent-2: #C97B2E;
+  --accent-dim: rgba(232, 148, 74, 0.14);
+  --gain: #9BC48A;
+  --loss: #D97858;
+  --warn: #E8B04A;
+  --serif: 'Fraunces', Georgia, serif;
+  --sans: 'Inter', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+body.theme-light {
+  --bg: #EFE6D3;
+  --bg-2: #E8DDC4;
+  --panel: #F5ECD8;
+  --panel-hi: #FAF3E2;
+  --border: rgba(92, 78, 54, 0.13);
+  --border-hi: rgba(92, 78, 54, 0.22);
+  --text: #2B2218;
+  --text-2: #5C4E36;
+  --text-dim: #8F7A55;
+  --text-mute: #B0986A;
+  --accent: #C97B2E;
+  --accent-2: #A56525;
+}
+body.accent-rust   { --accent: #C26B3D; --accent-2: #9E4F28; --accent-dim: rgba(194, 107, 61, 0.16); }
+body.accent-moss   { --accent: #7A8F5C; --accent-2: #5E7343; --accent-dim: rgba(122, 143, 92, 0.16); }
+body.accent-plum   { --accent: #9D6A85; --accent-2: #76506A; --accent-dim: rgba(157, 106, 133, 0.16); }
+body.accent-amber  { --accent: #E8944A; --accent-2: #C97B2E; --accent-dim: rgba(232, 148, 74, 0.14); }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.005em;
+}
+
+/* grain texture */
+body::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 1;
+  background-image: radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px);
+  background-size: 3px 3px;
+  opacity: 0.5;
+}
+body.theme-light::before {
+  background-image: radial-gradient(rgba(92, 78, 54, 0.04) 1px, transparent 1px);
+}
+
+.shell {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 18px 22px 40px;
+  position: relative;
+  z-index: 2;
+}
+
+/* --- top bar --- */
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2px 16px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
+.top .bolt { color: var(--text-2); font-family: var(--serif); font-size: 13px; letter-spacing: 0; font-style: italic; }
+.top .stats { display: flex; gap: 18px; align-items: center; }
+.top .stat { display: flex; gap: 5px; align-items: center; }
+.top .stat::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--text-dim); }
+.top .stat.on::before { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.top .btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-dim);
+  padding: 3px 10px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+.top .btn:hover { color: var(--text); border-color: var(--border-hi); }
+.top .btn.on { color: var(--accent); border-color: var(--accent); }
+
+/* --- bento grid --- */
+.bento {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-rows: minmax(0, auto);
+  gap: 12px;
+}
+
+/* --- tab nav --- */
+.tabnav {
+  display: flex;
+  gap: 0;
+  margin: 4px 0 18px;
+  padding: 0 2px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.tabnav button {
+  background: transparent;
+  border: 0;
+  padding: 10px 18px 12px;
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 300;
+  color: var(--text-mute);
+  cursor: pointer;
+  letter-spacing: -0.01em;
+  position: relative;
+  transition: color .2s;
+  border-bottom: 1.5px solid transparent;
+  margin-bottom: -1px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+}
+.tabnav button:hover { color: var(--text-2); }
+.tabnav button.on { color: var(--text); border-bottom-color: var(--accent); }
+.tabnav button .num { font-family: var(--mono); font-size: 9px; color: var(--text-mute); letter-spacing: 0.1em; }
+.tabnav button.on .num { color: var(--accent); }
+
+.tab { display: none; }
+.tab.on { display: block; }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .2s, transform .2s;
+  display: flex;
+  flex-direction: column;
+}
+.card:hover { border-color: var(--border-hi); }
+body.theme-light .card { box-shadow: 0 1px 0 rgba(255,255,255,0.5) inset; }
+body.theme-dark .card { box-shadow: 0 1px 0 rgba(255,255,255,0.015) inset; }
+
+.card-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-label .num {
+  color: var(--text-mute);
+  font-weight: 500;
+}
+.card-label .divider { flex: 1; height: 1px; background: var(--border); }
+
+.serif { font-family: var(--serif); font-weight: 300; letter-spacing: -0.015em; }
+.serif-h1 { font-family: var(--serif); font-weight: 300; font-size: 54px; line-height: 1.02; letter-spacing: -0.02em; }
+.serif-h2 { font-family: var(--serif); font-weight: 300; font-size: 34px; line-height: 1.05; letter-spacing: -0.015em; }
+.serif-h3 { font-family: var(--serif); font-weight: 400; font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; }
+.serif-italic { font-style: italic; font-weight: 300; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.dim { color: var(--text-dim); }
+.t2 { color: var(--text-2); }
+.mute { color: var(--text-mute); }
+
+/* --- specific card placements --- */
+.c-operator    { grid-column: span 3; grid-row: span 2; }
+.c-greeting    { grid-column: span 6; grid-row: span 2; }
+.c-weather     { grid-column: span 3; grid-row: span 2; }
+
+.c-calendar    { grid-column: span 5; grid-row: span 2; }
+.c-focus       { grid-column: span 4; grid-row: span 2; }
+.c-vitals      { grid-column: span 3; grid-row: span 2; }
+
+.c-inbox       { grid-column: span 4; grid-row: span 2; }
+.c-nowplaying  { grid-column: span 4; }
+.c-market      { grid-column: span 4; grid-row: span 2; }
+.c-project     { grid-column: span 4; }
+
+.c-property    { grid-column: span 6; }
+.c-wealth      { grid-column: span 6; }
+
+/* --- WEALTH TAB --- */
+.c-w-hero      { grid-column: span 7; grid-row: span 2; }
+.c-w-alloc     { grid-column: span 5; grid-row: span 2; }
+.c-w-compound  { grid-column: span 7; grid-row: span 2; }
+.c-w-savings   { grid-column: span 5; }
+.c-w-eofy      { grid-column: span 5; }
+.c-w-tax       { grid-column: span 6; }
+.c-w-goals     { grid-column: span 6; }
+
+/* --- MARKETS TAB --- */
+.c-m-hero      { grid-column: span 8; grid-row: span 2; }
+.c-m-macro     { grid-column: span 4; grid-row: span 2; }
+.c-m-holdings  { grid-column: span 7; grid-row: span 2; }
+.c-m-watch     { grid-column: span 5; }
+.c-m-earnings  { grid-column: span 5; }
+.c-m-summary   { grid-column: span 12; }
+
+/* --- PROPERTY TAB --- */
+.c-p-hero      { grid-column: span 7; grid-row: span 2; }
+.c-p-mortgage  { grid-column: span 5; grid-row: span 2; }
+.c-p-yield     { grid-column: span 7; }
+.c-p-suburbs   { grid-column: span 5; grid-row: span 2; }
+.c-p-deals     { grid-column: span 7; }
+.c-p-reminders { grid-column: span 12; }
+
+/* --- BUILD TAB --- */
+.c-b-active    { grid-column: span 7; grid-row: span 2; }
+.c-b-llm       { grid-column: span 5; grid-row: span 2; }
+.c-b-repos     { grid-column: span 6; grid-row: span 2; }
+.c-b-agents    { grid-column: span 6; }
+.c-b-cron      { grid-column: span 6; }
+.c-b-ideas     { grid-column: span 12; }
+
+/* --- WORK TAB --- */
+.c-wk-sprint   { grid-column: span 8; grid-row: span 2; }
+.c-wk-sla      { grid-column: span 4; grid-row: span 2; }
+.c-wk-velocity { grid-column: span 6; }
+.c-wk-deploys  { grid-column: span 6; }
+.c-wk-tickets  { grid-column: span 7; }
+.c-wk-meetings { grid-column: span 5; }
+
+/* --- LIFE TAB --- */
+.c-l-quote     { grid-column: span 7; }
+.c-l-sun       { grid-column: span 5; }
+.c-l-reading   { grid-column: span 5; grid-row: span 2; }
+.c-l-f1        { grid-column: span 4; grid-row: span 2; }
+.c-l-rituals   { grid-column: span 3; grid-row: span 2; }
+.c-l-travel    { grid-column: span 6; }
+.c-l-family    { grid-column: span 6; }
+
+/* --- operator card --- */
+.op-avatar {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  display: grid; place-items: center;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 16px;
+  color: var(--bg);
+}
+.op-stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--border);
+  font-size: 11.5px;
+}
+.op-stat:last-child { border-bottom: 0; }
+.op-stat .k { color: var(--text-dim); font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; }
+.op-stat .v { font-family: var(--serif); font-size: 15px; color: var(--text); font-weight: 400; }
+
+/* --- greeting --- */
+.greet-clock {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
+.greet-date {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-mute);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.greet-kpi {
+  display: flex;
+  gap: 28px;
+  margin-top: auto;
+  padding-top: 14px;
+}
+.greet-kpi .k { font-family: var(--mono); font-size: 9.5px; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 2px; }
+.greet-kpi .v { font-family: var(--serif); font-size: 22px; color: var(--text); font-weight: 400; }
+.greet-kpi .d { font-family: var(--mono); font-size: 10px; margin-left: 4px; }
+
+/* --- weather card --- */
+.w-main { display: flex; align-items: baseline; gap: 4px; }
+.w-temp { font-family: var(--serif); font-size: 58px; font-weight: 300; line-height: 1; letter-spacing: -0.03em; }
+.w-unit { font-family: var(--serif); font-size: 20px; color: var(--text-dim); }
+.w-cond { font-family: var(--serif); font-size: 17px; font-style: italic; color: var(--text-2); font-weight: 300; margin-top: 2px; }
+.w-sub { font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.05em; margin-top: 8px; }
+.w-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-top: auto; font-family: var(--mono); font-size: 10.5px; }
+.w-grid .k { color: var(--text-mute); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; }
+.w-grid .v { color: var(--text); }
+
+/* --- calendar --- */
+.week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin: 4px 0 12px;
+}
+.dow { font-family: var(--mono); font-size: 9px; color: var(--text-mute); letter-spacing: 0.08em; text-align: center; margin-bottom: 4px; text-transform: uppercase; }
+.dcell {
+  aspect-ratio: 1;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--serif);
+  font-size: 17px;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all .15s;
+  position: relative;
+  font-weight: 400;
+}
+.dcell:hover { border-color: var(--border-hi); color: var(--text); }
+.dcell.today {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+.dcell.has::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  width: 3px; height: 3px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+.dcell.today.has::after { background: var(--bg); }
+.dcell.past { color: var(--text-mute); }
+
+.agenda-item {
+  display: flex;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px dashed var(--border);
+  align-items: baseline;
+}
+.agenda-item:last-child { border-bottom: 0; }
+.agenda-item .tm { font-family: var(--mono); font-size: 10px; color: var(--text-dim); width: 52px; flex-shrink: 0; letter-spacing: 0.04em; }
+.agenda-item .ti { font-family: var(--serif); font-size: 14px; color: var(--text); flex: 1; font-weight: 400; }
+.agenda-item .tag { font-family: var(--mono); font-size: 9px; color: var(--text-mute); letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* --- focus list --- */
+.focus-line {
+  display: flex;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--border);
+  align-items: center;
+  cursor: pointer;
+}
+.focus-line:last-child { border-bottom: 0; }
+.focus-line .box {
+  width: 14px; height: 14px;
+  border: 1px solid var(--text-mute);
+  border-radius: 3px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: all .15s;
+}
+.focus-line.done .box { background: var(--accent); border-color: var(--accent); }
+.focus-line.done .box::after { content: '✓'; font-size: 10px; color: var(--bg); font-weight: 700; }
+.focus-line .ti { flex: 1; font-family: var(--serif); font-size: 14px; font-weight: 400; color: var(--text); line-height: 1.3; }
+.focus-line.done .ti { color: var(--text-mute); text-decoration: line-through; }
+.focus-line .tag { font-family: var(--mono); font-size: 9px; color: var(--text-mute); letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* --- vitals rings --- */
+.ring-row { display: flex; flex-direction: column; gap: 14px; }
+.ring-item { display: flex; align-items: center; gap: 12px; }
+.ring-item .lbl { font-family: var(--mono); font-size: 9.5px; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px; }
+.ring-item .val { font-family: var(--serif); font-size: 19px; font-weight: 400; color: var(--text); line-height: 1; }
+.ring-item .sub { font-family: var(--mono); font-size: 9.5px; color: var(--text-mute); margin-top: 2px; }
+
+/* --- inbox --- */
+.inbox-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--border);
+  align-items: flex-start;
+  cursor: pointer;
+}
+.inbox-item:last-child { border-bottom: 0; }
+.inbox-item .src-mark {
+  width: 24px; height: 24px; flex-shrink: 0;
+  border-radius: 6px;
+  background: var(--panel-hi);
+  border: 1px solid var(--border);
+  display: grid; place-items: center;
+  font-family: var(--serif); font-size: 11px; color: var(--text-2);
+}
+.inbox-item .body { flex: 1; min-width: 0; }
+.inbox-item .src { font-family: var(--mono); font-size: 9.5px; color: var(--text-dim); letter-spacing: 0.08em; text-transform: uppercase; }
+.inbox-item .ti { font-family: var(--serif); font-size: 13.5px; color: var(--text); line-height: 1.3; margin-top: 2px; font-weight: 400; }
+.inbox-item .tm { font-family: var(--mono); font-size: 9.5px; color: var(--text-mute); white-space: nowrap; }
+
+/* --- now playing --- */
+.np-row { display: flex; gap: 14px; align-items: center; }
+.np-art {
+  width: 64px; height: 64px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  display: grid; place-items: center;
+  font-family: var(--mono);
+  color: var(--bg);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  position: relative;
+  overflow: hidden;
+}
+.np-art::after {
+  content: ''; position: absolute;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: 0 0 0 2px var(--accent-2);
+}
+.np-meta { flex: 1; min-width: 0; }
+.np-title { font-family: var(--serif); font-size: 16px; color: var(--text); line-height: 1.2; font-weight: 400; }
+.np-artist { font-family: var(--serif); font-style: italic; font-size: 12px; color: var(--text-dim); margin-top: 3px; }
+.np-progress { margin-top: 8px; height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; }
+.np-progress .p { height: 100%; background: var(--accent); width: 40%; }
+.np-time { display: flex; justify-content: space-between; margin-top: 4px; font-family: var(--mono); font-size: 9px; color: var(--text-mute); }
+
+/* --- market mini --- */
+.mrk-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.mrk-sum { font-family: var(--serif); font-size: 30px; font-weight: 300; letter-spacing: -0.02em; line-height: 1; }
+.mrk-delta { font-family: var(--mono); font-size: 11px; }
+.mrk-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--border);
+  font-size: 12px;
+}
+.mrk-row:last-child { border-bottom: 0; }
+.mrk-row .sym { font-family: var(--mono); font-size: 10.5px; color: var(--text-dim); letter-spacing: 0.04em; flex: 1; }
+.mrk-row .px { font-family: var(--serif); font-size: 14px; color: var(--text); margin-right: 10px; font-weight: 400; }
+.mrk-row .ch { font-family: var(--mono); font-size: 10px; width: 52px; text-align: right; }
+
+/* --- project spotlight --- */
+.proj-hero { font-family: var(--serif); font-size: 19px; font-weight: 400; line-height: 1.2; margin-bottom: 4px; }
+.proj-sub { font-family: var(--serif); font-style: italic; font-size: 12.5px; color: var(--text-dim); margin-bottom: 14px; font-weight: 300; }
+.proj-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 10px; }
+.proj-bar .f { height: 100%; background: var(--accent); }
+.proj-meta { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.06em; }
+
+/* --- property strip --- */
+.prop-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 6px; }
+.prop-cell {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-hi);
+}
+.prop-cell .nm { font-family: var(--mono); font-size: 9.5px; color: var(--text-dim); letter-spacing: 0.08em; text-transform: uppercase; }
+.prop-cell .med { font-family: var(--serif); font-size: 17px; color: var(--text); margin-top: 4px; font-weight: 400; letter-spacing: -0.01em; }
+.prop-cell .ch { font-family: var(--mono); font-size: 10px; margin-top: 3px; }
+
+/* --- wealth mini --- */
+.wealth-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: center; }
+.wealth-nw { font-family: var(--serif); font-size: 44px; font-weight: 300; letter-spacing: -0.025em; line-height: 1; }
+.wealth-lbl { font-family: var(--mono); font-size: 9.5px; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 4px; }
+.wealth-sub { font-family: var(--serif); font-style: italic; font-size: 12px; color: var(--text-dim); margin-top: 4px; font-weight: 300; }
+.wealth-donut-row { display: flex; flex-direction: column; gap: 6px; }
+.w-alloc-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.w-alloc-row .sw { width: 7px; height: 7px; border-radius: 2px; }
+.w-alloc-row .k { flex: 1; font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.05em; }
+.w-alloc-row .v { font-family: var(--serif); font-size: 13px; color: var(--text); font-weight: 400; }
+
+.gain { color: var(--gain); }
+.loss { color: var(--loss); }
+.acc  { color: var(--accent); }
+.warn { color: var(--warn); }
+
+/* subtle shimmer for `today` dot */
+@keyframes glow { 0%,100% { box-shadow: 0 0 0px var(--accent); } 50% { box-shadow: 0 0 10px var(--accent); } }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+
+/* --- shared new components for tabs --- */
+
+/* big stat hero */
+.bigstat .lbl { font-family: var(--mono); font-size: 9.5px; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; }
+.bigstat .num { font-family: var(--serif); font-size: 64px; font-weight: 300; line-height: 1; letter-spacing: -0.03em; margin-top: 8px; }
+.bigstat .sub { font-family: var(--serif); font-size: 14px; font-style: italic; color: var(--text-dim); font-weight: 300; margin-top: 8px; }
+.bigstat .delta { font-family: var(--mono); font-size: 11px; margin-top: 10px; letter-spacing: 0.04em; }
+
+/* donut */
+.donut-wrap { display: flex; gap: 18px; align-items: center; }
+.donut-legend { flex: 1; }
+.donut-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px dashed var(--border); font-size: 12px; }
+.donut-row:last-child { border-bottom: 0; }
+.donut-row .nm { display: flex; gap: 8px; align-items: center; font-family: var(--serif); font-weight: 400; color: var(--text); }
+.donut-row .nm .sw { width: 8px; height: 8px; border-radius: 50%; }
+.donut-row .v { font-family: var(--mono); font-size: 11px; color: var(--text-2); }
+.donut-row .pct { font-family: var(--mono); font-size: 9.5px; color: var(--text-mute); margin-left: 8px; }
+
+/* spark line */
+.spark { display: block; width: 100%; height: auto; }
+
+/* line table */
+.line-row { display: flex; align-items: baseline; gap: 12px; padding: 8px 0; border-bottom: 1px dashed var(--border); }
+.line-row:last-child { border-bottom: 0; }
+.line-row .nm { font-family: var(--serif); font-size: 14px; color: var(--text); flex: 1; font-weight: 400; }
+.line-row .meta { font-family: var(--mono); font-size: 10px; color: var(--text-mute); letter-spacing: 0.04em; }
+.line-row .px { font-family: var(--mono); font-size: 12px; color: var(--text-2); }
+.line-row .ch { font-family: var(--mono); font-size: 10px; min-width: 56px; text-align: right; }
+.line-row .ch.gain { color: var(--gain); }
+.line-row .ch.loss { color: var(--loss); }
+.gain { color: var(--gain); }
+.loss { color: var(--loss); }
+.acc { color: var(--accent); }
+.warn-c { color: var(--warn); }
+
+/* progress / gauge */
+.bar { height: 4px; background: var(--border); border-radius: 999px; overflow: hidden; }
+.bar > .f { height: 100%; background: var(--accent); border-radius: 999px; transition: width .3s; }
+.bar.thin { height: 2px; }
+
+/* checklist (eofy / reminders) */
+.checklist .item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--border); cursor: pointer; align-items: baseline; }
+.checklist .item:last-child { border-bottom: 0; }
+.checklist .box { width: 13px; height: 13px; border: 1.5px solid var(--text-mute); border-radius: 3px; flex-shrink: 0; position: relative; top: 2px; }
+.checklist .item.done .box { background: var(--accent); border-color: var(--accent); }
+.checklist .item.done .box::after { content: '✓'; position: absolute; inset: 0; color: var(--bg); font-size: 9px; display: grid; place-items: center; }
+.checklist .item .ti { font-family: var(--serif); font-size: 13.5px; color: var(--text); flex: 1; font-weight: 400; }
+.checklist .item.done .ti { color: var(--text-mute); text-decoration: line-through; text-decoration-color: var(--text-mute); }
+.checklist .item .due { font-family: var(--mono); font-size: 9.5px; color: var(--text-mute); letter-spacing: 0.06em; }
+
+/* kanban-lite for work */
+.k-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.k-col { background: rgba(255,255,255,0.015); border-radius: 10px; padding: 10px; border: 1px solid var(--border); }
+body.theme-light .k-col { background: rgba(0,0,0,0.015); }
+.k-col h5 { margin: 0 0 8px; font-family: var(--mono); font-size: 9.5px; color: var(--text-mute); letter-spacing: 0.12em; text-transform: uppercase; display: flex; justify-content: space-between; }
+.k-tk { background: var(--panel-hi); border: 1px solid var(--border); border-radius: 6px; padding: 7px 9px; margin-bottom: 6px; }
+.k-tk .id { font-family: var(--mono); font-size: 9.5px; color: var(--text-mute); letter-spacing: 0.06em; }
+.k-tk .ti { font-family: var(--serif); font-size: 12.5px; color: var(--text); margin-top: 2px; line-height: 1.3; font-weight: 400; }
+.k-tk .meta { display: flex; justify-content: space-between; margin-top: 5px; font-family: var(--mono); font-size: 9px; color: var(--text-mute); letter-spacing: 0.06em; }
+.pri { font-family: var(--mono); font-size: 8.5px; padding: 1px 6px; border-radius: 99px; letter-spacing: 0.1em; }
+.pri-p0 { background: rgba(217, 120, 88, 0.18); color: var(--loss); }
+.pri-p1 { background: rgba(232, 176, 74, 0.18); color: var(--warn); }
+.pri-p2 { background: rgba(155, 196, 138, 0.16); color: var(--gain); }
+
+/* ring */
+.ring-block { display: flex; gap: 12px; align-items: center; padding: 7px 0; }
+.ring-block svg { flex-shrink: 0; }
+.ring-block .lbl { font-family: var(--mono); font-size: 9.5px; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; }
+.ring-block .v { font-family: var(--serif); font-size: 18px; color: var(--text); font-weight: 400; }
+.ring-block .sub { font-family: var(--mono); font-size: 9.5px; color: var(--text-mute); margin-top: 2px; }
+
+/* sun arc */
+.sun-arc { position: relative; height: 80px; margin: 8px 0; }
+.sun-arc svg { width: 100%; height: 100%; }
+.sun-info { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.05em; margin-top: 6px; }
+.sun-info .v { color: var(--text-2); font-size: 11px; }
+
+/* f1 next race */
+.f1-card .num { font-family: var(--serif); font-size: 38px; font-weight: 300; line-height: 1; }
+.f1-card .when { font-family: var(--mono); font-size: 11px; color: var(--text-2); margin-top: 6px; letter-spacing: 0.04em; }
+.f1-card .standings { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
+.f1-card .driver { display: flex; gap: 10px; align-items: center; padding: 4px 0; font-size: 11.5px; }
+.f1-card .driver .pos { font-family: var(--mono); font-size: 10px; color: var(--text-mute); width: 14px; }
+.f1-card .driver .nm { font-family: var(--serif); flex: 1; color: var(--text); }
+.f1-card .driver .pts { font-family: var(--mono); font-size: 10px; color: var(--text-2); }
+.f1-card .driver.fav .nm { color: var(--accent); }
+
+/* book card */
+.book-card .title { font-family: var(--serif); font-size: 22px; line-height: 1.15; font-weight: 400; }
+.book-card .author { font-family: var(--serif); font-style: italic; font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+.book-card .pages { font-family: var(--mono); font-size: 10px; color: var(--text-2); margin-top: 12px; letter-spacing: 0.05em; }
+.book-cover { width: 80px; height: 110px; background: linear-gradient(135deg, var(--accent-2), var(--accent)); border-radius: 4px; box-shadow: 4px 4px 0 var(--border); display: grid; place-items: center; color: var(--bg); font-family: var(--serif); font-size: 24px; font-weight: 400; }
+
+/* property mortgage */
+.mort-num { font-family: var(--serif); font-size: 36px; font-weight: 300; line-height: 1; letter-spacing: -0.02em; }
+.mort-bar { display: flex; height: 8px; border-radius: 99px; overflow: hidden; margin: 14px 0 6px; }
+.mort-bar .princ { background: var(--accent); }
+.mort-bar .int { background: var(--text-mute); }
+.mort-key { display: flex; gap: 14px; font-family: var(--mono); font-size: 9.5px; color: var(--text-dim); letter-spacing: 0.05em; }
+.mort-key .sw { width: 8px; height: 8px; border-radius: 2px; display: inline-block; margin-right: 5px; vertical-align: middle; }
+
+/* deal cards */
+.deal { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel-hi); margin-bottom: 8px; }
+.deal:last-child { margin-bottom: 0; }
+.deal .addr { font-family: var(--serif); font-size: 14px; color: var(--text); font-weight: 400; }
+.deal .meta { display: flex; gap: 12px; font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-top: 4px; letter-spacing: 0.04em; }
+.deal .why { font-family: var(--serif); font-style: italic; font-size: 12px; color: var(--text-2); margin-top: 6px; font-weight: 300; }
+
+/* family / travel */
+.life-list .item { display: flex; gap: 12px; padding: 9px 0; border-bottom: 1px dashed var(--border); align-items: baseline; }
+.life-list .item:last-child { border-bottom: 0; }
+.life-list .when { font-family: var(--mono); font-size: 10px; color: var(--text-mute); width: 70px; flex-shrink: 0; letter-spacing: 0.05em; }
+.life-list .what { font-family: var(--serif); font-size: 13.5px; flex: 1; color: var(--text); font-weight: 400; }
+.life-list .who { font-family: var(--mono); font-size: 9.5px; color: var(--text-dim); letter-spacing: 0.06em; }
+
+/* tweak chip */
+.tweak-chip {
+  position: fixed; right: 18px; bottom: 18px; z-index: 40;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 999px; padding: 6px 14px;
+  font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  cursor: pointer;
+  display: flex; gap: 10px; align-items: center;
+}
+.tweak-chip:hover { border-color: var(--border-hi); color: var(--text); }
+
+.tweaks-pop {
+  position: fixed; right: 18px; bottom: 60px; z-index: 40;
+  background: var(--panel); border: 1px solid var(--border-hi);
+  border-radius: 14px; padding: 18px;
+  width: 260px;
+  font-family: var(--sans);
+  display: none;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+.tweaks-pop.open { display: block; }
+.tweaks-pop h4 { margin: 0 0 12px; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.14em; color: var(--text-dim); text-transform: uppercase; font-weight: 500; }
+.tweaks-pop .row { margin-bottom: 14px; }
+.tweaks-pop .row:last-child { margin-bottom: 0; }
+.tweaks-pop .k { font-family: var(--mono); font-size: 9.5px; color: var(--text-mute); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+.swatch-row { display: flex; gap: 8px; }
+.swatch-btn {
+  width: 22px; height: 22px; border-radius: 6px; cursor: pointer;
+  border: 2px solid transparent; transition: transform .12s;
+}
+.swatch-btn.on { border-color: var(--text); transform: scale(1.1); }
+.theme-toggle { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.theme-toggle button {
+  flex: 1; background: transparent; border: 0; padding: 6px 0;
+  font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+  letter-spacing: 0.08em; cursor: pointer;
+}
+.theme-toggle button.on { background: var(--accent-dim); color: var(--accent); }
+
+.esc-chip {
+  position: fixed; right: 20px; top: 20px; z-index: 30;
+  font-family: var(--mono); font-size: 9px; color: var(--text-mute);
+  letter-spacing: 0.12em; text-transform: uppercase;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 999px; padding: 4px 10px;
+}
+</style>
+</head>
+<body class="theme-dark accent-amber">
+<div class="esc-chip">↗ x.com / to exit full-screen</div>
+
+<div class="shell">
+<div class="top">
+  <div style="display: flex; gap: 18px; align-items: center;">
+    <span class="bolt">ambient</span>
+    <span class="stat on">▲ OPERATOR</span>
+    <span class="stat">01 MAY 2026</span>
+    <span class="stat" id="clockTop">—</span>
+  </div>
+  <div class="stats">
+    <span class="stat on">NETWORK · STABLE</span>
+    <span class="stat">BATTERY · 82%</span>
+    <span class="stat">SYNC · JUST NOW</span>
+    <button class="btn" onclick="document.getElementById('tweaksPop').classList.toggle('open')">◐ TUNE</button>
+  </div>
+</div>
+
+<nav class="tabnav">
+  <button data-tab="today" class="on"><span class="num">01</span>Today</button>
+  <button data-tab="wealth"><span class="num">02</span>Wealth</button>
+  <button data-tab="markets"><span class="num">03</span>Markets</button>
+  <button data-tab="property"><span class="num">04</span>Property</button>
+  <button data-tab="build"><span class="num">05</span>Build</button>
+  <button data-tab="work"><span class="num">06</span>Work</button>
+  <button data-tab="life"><span class="num">07</span>Life</button>
+</nav>
+
+<section class="tab tab-today on" data-screen-label="01 Today">
+<div class="bento">
+
+<!-- OPERATOR -->
+<section class="card c-operator">
+  <div class="card-label"><span class="num">01</span> Operator <span class="divider"></span></div>
+  <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 14px;">
+    <div class="op-avatar">V</div>
+    <div>
+      <div class="serif" style="font-size: 20px; font-weight: 400; line-height: 1.1;">Vish M.</div>
+      <div class="mono dim" style="font-size: 10px; margin-top: 2px; letter-spacing: 0.08em;">SCHOFIELDS · NSW</div>
+    </div>
+  </div>
+  <div class="op-stat"><span class="k">Mode</span><span class="v serif-italic t2">Deep Work</span></div>
+  <div class="op-stat"><span class="k">Session</span><span class="v">02:14:30</span></div>
+  <div class="op-stat"><span class="k">Focus</span><span class="v"><span class="acc">87</span> <span class="mute mono" style="font-size: 11px;">/ 100</span></span></div>
+  <div class="op-stat"><span class="k">Streak</span><span class="v">12 days</span></div>
+</section>
+
+<!-- GREETING -->
+<section class="card c-greeting">
+  <div class="card-label"><span class="num">02</span> Session <span class="divider"></span><span class="mono dim" id="clockInline">—</span></div>
+  <div class="greet-date">Friday · 1 May · AEST</div>
+  <h1 class="serif-h1" style="margin: 10px 0 12px;">Good morning,<br/><span class="serif-italic" style="color: var(--accent);">Vish.</span></h1>
+  <div class="serif" style="font-size: 15.5px; font-weight: 300; color: var(--text-2); font-style: italic; line-height: 1.45; max-width: 480px;">
+    Markets quiet after Anzac Day. Three tasks planned. A Saudi GP tonight. The weather warms through the afternoon.
+  </div>
+  <div class="greet-kpi">
+    <div>
+      <div class="k">Portfolio · 24h</div>
+      <div class="v gain">+0.84%<span class="d mono gain">▲ $15,420</span></div>
+    </div>
+    <div>
+      <div class="k">Sprint · Day 8</div>
+      <div class="v">28<span class="d mono dim">/ 40 pts</span></div>
+    </div>
+    <div>
+      <div class="k">LLM · MTD</div>
+      <div class="v">$271<span class="d mono dim">budget $500</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- WEATHER -->
+<section class="card c-weather">
+  <div class="card-label"><span class="num">03</span> Location <span class="divider"></span></div>
+  <div class="w-main"><span class="w-temp">19</span><span class="w-unit">°C</span></div>
+  <div class="w-cond">Partly cloudy · Harvest moon tonight</div>
+  <div class="w-sub">Schofields · 33.70°S 150.87°E</div>
+  <div class="w-grid" style="margin-top: 16px;">
+    <div><div class="k">High / Low</div><div class="v">22° / 12°</div></div>
+    <div><div class="k">Wind</div><div class="v">14 km/h NE</div></div>
+    <div><div class="k">Sunrise</div><div class="v">06:14</div></div>
+    <div><div class="k">Sunset</div><div class="v">17:38</div></div>
+    <div><div class="k">UV Index</div><div class="v">3 · low</div></div>
+    <div><div class="k">Air Qual.</div><div class="v">28 · good</div></div>
+  </div>
+</section>
+
+<!-- CALENDAR -->
+<section class="card c-calendar">
+  <div class="card-label"><span class="num">04</span> Calendar <span class="divider"></span><span class="mono dim">APR 2026</span></div>
+
+  <div class="week">
+    <div class="dow">M</div><div class="dow">T</div><div class="dow">W</div><div class="dow">T</div><div class="dow">F</div><div class="dow">S</div><div class="dow">S</div>
+    <div class="dcell past has">20</div>
+    <div class="dcell past">21</div>
+    <div class="dcell past has">22</div>
+    <div class="dcell past">23</div>
+    <div class="dcell past has">24</div>
+    <div class="dcell today has">25</div>
+    <div class="dcell has">26</div>
+  </div>
+
+  <div>
+    <div class="agenda-item">
+      <span class="tm">09:00</span>
+      <span class="ti">Deep-work block · <span class="serif-italic dim">OpenClaw agent-mesh MCP merge</span></span>
+      <span class="tag">AI</span>
+    </div>
+    <div class="agenda-item">
+      <span class="tm">13:30</span>
+      <span class="ti">Property walk-through · <span class="serif-italic dim">12 Allingham St, Schofields</span></span>
+      <span class="tag">Prop</span>
+    </div>
+    <div class="agenda-item">
+      <span class="tm">19:00</span>
+      <span class="ti">Dinner with Priya &amp; kids</span>
+      <span class="tag">Life</span>
+    </div>
+    <div class="agenda-item">
+      <span class="tm">03:00<span class="mute" style="font-size: 9px;">+1</span></span>
+      <span class="ti">Saudi Arabian GP · <span class="serif-italic dim">Round 5 · Jeddah</span></span>
+      <span class="tag">F1</span>
+    </div>
+  </div>
+</section>
+
+<!-- TODAY'S FOCUS -->
+<section class="card c-focus">
+  <div class="card-label"><span class="num">05</span> Today's Focus <span class="divider"></span><span class="mono dim"><span id="focusDone">1</span>/4</span></div>
+  <div id="focusList">
+    <div class="focus-line done" data-done="1"><div class="box"></div><span class="ti">Review CHG0018801 &amp; sign off before 14:00</span><span class="tag">NOW</span></div>
+    <div class="focus-line" data-done="0"><div class="box"></div><span class="ti">Ship MCP integration for claude-pipelines v0.4</span><span class="tag">AI</span></div>
+    <div class="focus-line" data-done="0"><div class="box"></div><span class="ti">Finalise Schofields investment spreadsheet (EOFY)</span><span class="tag">$</span></div>
+    <div class="focus-line" data-done="0"><div class="box"></div><span class="ti">Walk-through 12 Allingham St · make offer decision</span><span class="tag">Prop</span></div>
+  </div>
+  <div class="serif serif-italic dim" style="font-size: 12px; margin-top: auto; padding-top: 14px; border-top: 1px solid var(--border); line-height: 1.4;">
+    "What you do every day matters more than what you do once in a while." <span class="mono mute" style="font-size: 9px; letter-spacing: 0.1em;">— GRETCHEN RUBIN</span>
+  </div>
+</section>
+
+<!-- VITALS -->
+<section class="card c-vitals">
+  <div class="card-label"><span class="num">06</span> Vitals <span class="divider"></span></div>
+
+  <div class="ring-row">
+    <div class="ring-item">
+      <svg width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" stroke="var(--border)" stroke-width="3.5" fill="none"/><circle cx="22" cy="22" r="18" stroke="var(--accent)" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="28" transform="rotate(-90 22 22)"/></svg>
+      <div>
+        <div class="lbl">Savings rate</div>
+        <div class="val">42<span class="mute mono" style="font-size: 11px;">%</span></div>
+        <div class="sub">target 50% · tracking</div>
+      </div>
+    </div>
+    <div class="ring-item">
+      <svg width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" stroke="var(--border)" stroke-width="3.5" fill="none"/><circle cx="22" cy="22" r="18" stroke="var(--gain)" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="23" transform="rotate(-90 22 22)"/></svg>
+      <div>
+        <div class="lbl">Sprint pts</div>
+        <div class="val">70<span class="mute mono" style="font-size: 11px;">%</span></div>
+        <div class="sub">28 / 40 · day 8 of 10</div>
+      </div>
+    </div>
+    <div class="ring-item">
+      <svg width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" stroke="var(--border)" stroke-width="3.5" fill="none"/><circle cx="22" cy="22" r="18" stroke="var(--warn)" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="52" transform="rotate(-90 22 22)"/></svg>
+      <div>
+        <div class="lbl">LLM budget</div>
+        <div class="val">54<span class="mute mono" style="font-size: 11px;">%</span></div>
+        <div class="sub">$271 / $500 · MTD</div>
+      </div>
+    </div>
+    <div class="ring-item">
+      <svg width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" stroke="var(--border)" stroke-width="3.5" fill="none"/><circle cx="22" cy="22" r="18" stroke="var(--accent)" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="11" transform="rotate(-90 22 22)"/></svg>
+      <div>
+        <div class="lbl">Reading streak</div>
+        <div class="val">12<span class="mute mono" style="font-size: 11px;">d</span></div>
+        <div class="sub">Quant Finance · pg 184</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INBOX -->
+<section class="card c-inbox">
+  <div class="card-label"><span class="num">07</span> Inbox <span class="divider"></span><span class="mono dim">4 UNREAD</span></div>
+
+  <div class="inbox-item">
+    <div class="src-mark">R</div>
+    <div class="body">
+      <div style="display: flex; justify-content: space-between;"><span class="src">Reuters · Macro</span><span class="tm">08m</span></div>
+      <div class="ti">RBA holds cash rate at 4.10%, signals dovish pivot in Q3</div>
+    </div>
+  </div>
+  <div class="inbox-item">
+    <div class="src-mark" style="color: var(--accent);">⌁</div>
+    <div class="body">
+      <div style="display: flex; justify-content: space-between;"><span class="src">The Information · AI</span><span class="tm">22m</span></div>
+      <div class="ti">Anthropic ships Claude 4.5 multimodal — latency down 40%</div>
+    </div>
+  </div>
+  <div class="inbox-item">
+    <div class="src-mark">A</div>
+    <div class="body">
+      <div style="display: flex; justify-content: space-between;"><span class="src">AFR · Property</span><span class="tm">41m</span></div>
+      <div class="ti">Sydney dwelling values up 0.4% in April, NW corridor leads</div>
+    </div>
+  </div>
+  <div class="inbox-item">
+    <div class="src-mark">B</div>
+    <div class="body">
+      <div style="display: flex; justify-content: space-between;"><span class="src">Bloomberg · Equities</span><span class="tm">1h</span></div>
+      <div class="ti">NVDA rallies after Jensen keynote · analysts lift PTs to $180</div>
+    </div>
+  </div>
+</section>
+
+<!-- NOW PLAYING -->
+<section class="card c-nowplaying">
+  <div class="card-label"><span class="num">08</span> Now building <span class="divider"></span><span class="mono dim acc">● LIVE</span></div>
+  <div class="np-row">
+    <div class="np-art">◉</div>
+    <div class="np-meta">
+      <div class="np-title">openclaw / agent-mesh</div>
+      <div class="np-artist">feat/mcp-streaming · 412 lines changed</div>
+      <div class="np-progress"><div class="p" style="width: 64%;"></div></div>
+      <div class="np-time"><span>14 commits today</span><span>→ merge in ~45m</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- MARKET MINI -->
+<section class="card c-market">
+  <div class="card-label"><span class="num">09</span> Markets <span class="divider"></span><span class="mono dim">US · PRE-MKT</span></div>
+  <div class="mrk-head">
+    <div>
+      <div class="wealth-lbl">Portfolio · AUD</div>
+      <div class="mrk-sum">$1,842,000</div>
+    </div>
+    <div class="mrk-delta gain" style="text-align: right;">▲ 0.84%<br/><span class="mute" style="font-size: 9px;">+$15,420 · 24H</span></div>
+  </div>
+  <div class="mrk-row"><span class="sym">NVDA</span><span class="px">144.72</span><span class="ch gain">▲ 3.47%</span></div>
+  <div class="mrk-row"><span class="sym">MSFT</span><span class="px">464.12</span><span class="ch gain">▲ 0.47%</span></div>
+  <div class="mrk-row"><span class="sym">PLTR</span><span class="px">82.14</span><span class="ch gain">▲ 2.39%</span></div>
+  <div class="mrk-row"><span class="sym">TSLA</span><span class="px">291.15</span><span class="ch loss">▼ 1.83%</span></div>
+  <div class="mrk-row"><span class="sym">CBA.AX</span><span class="px">152.40</span><span class="ch gain">▲ 0.51%</span></div>
+  <div class="mrk-row"><span class="sym">VAS.AX</span><span class="px">99.86</span><span class="ch gain">▲ 0.22%</span></div>
+  <div class="mrk-row"><span class="sym">BHP.AX</span><span class="px">41.22</span><span class="ch loss">▼ 0.82%</span></div>
+</section>
+
+<!-- PROJECT SPOTLIGHT -->
+<section class="card c-project">
+  <div class="card-label"><span class="num">10</span> Active Project <span class="divider"></span></div>
+  <div class="proj-hero">Claude Pipelines v0.4</div>
+  <div class="proj-sub">Streaming MCP, tool-use, and caching for OpenClaw agents.</div>
+  <div class="proj-bar"><div class="f" style="width: 72%;"></div></div>
+  <div class="proj-meta">
+    <span>72% complete</span>
+    <span>ships · Wed 30 Apr</span>
+  </div>
+  <div style="display: flex; gap: 6px; margin-top: 14px;">
+    <span class="mono" style="font-size: 9px; color: var(--text-dim); border: 1px solid var(--border); padding: 3px 8px; border-radius: 999px; letter-spacing: 0.08em;">TYPESCRIPT</span>
+    <span class="mono" style="font-size: 9px; color: var(--text-dim); border: 1px solid var(--border); padding: 3px 8px; border-radius: 999px; letter-spacing: 0.08em;">MCP</span>
+    <span class="mono" style="font-size: 9px; color: var(--accent); border: 1px solid var(--accent); padding: 3px 8px; border-radius: 999px; letter-spacing: 0.08em;">P0</span>
+  </div>
+</section>
+
+<!-- PROPERTY STRIP -->
+<section class="card c-property">
+  <div class="card-label"><span class="num">11</span> Property · NW Sydney <span class="divider"></span><span class="mono dim">12M MOMENTUM</span></div>
+  <div class="prop-strip">
+    <div class="prop-cell"><div class="nm">Schofields</div><div class="med">$1.29M</div><div class="ch gain">▲ 6.4%</div></div>
+    <div class="prop-cell"><div class="nm">Marsden Pk</div><div class="med">$1.18M</div><div class="ch gain">▲ 7.2%</div></div>
+    <div class="prop-cell"><div class="nm">The Ponds</div><div class="med">$1.42M</div><div class="ch gain">▲ 5.1%</div></div>
+    <div class="prop-cell"><div class="nm">Rouse Hill</div><div class="med">$1.54M</div><div class="ch gain">▲ 4.0%</div></div>
+    <div class="prop-cell"><div class="nm">Riverstone</div><div class="med">$1.10M</div><div class="ch gain">▲ 5.8%</div></div>
+  </div>
+  <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); display: flex; justify-content: space-between; align-items: center;">
+    <div class="serif serif-italic" style="font-size: 13.5px; color: var(--text-2); font-weight: 300;">"12 Allingham St — 10.5% under median. Walk-through today 13:30."</div>
+    <span class="mono" style="font-size: 9px; color: var(--accent); border: 1px solid var(--accent); padding: 3px 8px; border-radius: 999px; letter-spacing: 0.08em;">DEAL ALERT</span>
+  </div>
+</section>
+
+<!-- WEALTH -->
+<section class="card c-wealth">
+  <div class="card-label"><span class="num">12</span> Wealth <span class="divider"></span><span class="mono dim">EOFY · 66 DAYS</span></div>
+  <div class="wealth-grid">
+    <div>
+      <div class="wealth-lbl">Net Worth</div>
+      <div class="wealth-nw">$1.84M</div>
+      <div class="wealth-sub">+4.2% YTD · on pace for $2.85M by 2031</div>
+    </div>
+    <div class="wealth-donut-row">
+      <div class="w-alloc-row"><span class="sw" style="background: var(--accent);"></span><span class="k">Property</span><span class="v">$980K</span></div>
+      <div class="w-alloc-row"><span class="sw" style="background: var(--gain);"></span><span class="k">Equities</span><span class="v">$612K</span></div>
+      <div class="w-alloc-row"><span class="sw" style="background: var(--warn);"></span><span class="k">Super</span><span class="v">$165K</span></div>
+      <div class="w-alloc-row"><span class="sw" style="background: var(--text-dim);"></span><span class="k">Cash</span><span class="v">$85K</span></div>
+    </div>
+  </div>
+</section>
+
+</div>
+</section>
+<!-- end tab-today -->
+
+<!-- ============= WEALTH ============= -->
+<section class="tab tab-wealth" data-screen-label="02 Wealth">
+<div class="bento">
+
+<section class="card c-w-hero">
+  <div class="card-label"><span class="num">01</span> Net Worth <span class="divider"></span><span class="mono dim">AUD · 1 MAY 2026</span></div>
+  <div class="bigstat">
+    <div class="num">$1.84<span class="mute" style="font-size: 36px;">M</span></div>
+    <div class="sub">Up 4.2% YTD · on pace for $2.85M by 2031.</div>
+    <div class="delta gain">▲ $73,200 <span class="mute" style="margin-left: 6px;">since 1 Jan</span></div>
+  </div>
+  <svg class="spark" viewBox="0 0 600 100" preserveAspectRatio="none" style="margin-top: 18px;">
+    <defs>
+      <linearGradient id="wfill" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.22"/>
+        <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path d="M0,80 L40,76 L80,72 L120,75 L160,68 L200,64 L240,58 L280,62 L320,52 L360,48 L400,42 L440,38 L480,33 L520,28 L560,22 L600,18 L600,100 L0,100 Z" fill="url(#wfill)"/>
+    <path d="M0,80 L40,76 L80,72 L120,75 L160,68 L200,64 L240,58 L280,62 L320,52 L360,48 L400,42 L440,38 L480,33 L520,28 L560,22 L600,18" stroke="var(--accent)" stroke-width="1.5" fill="none"/>
+  </svg>
+  <div style="display: flex; justify-content: space-between; font-family: var(--mono); font-size: 9px; color: var(--text-mute); letter-spacing: 0.08em; margin-top: 4px;">
+    <span>MAY '25</span><span>AUG</span><span>NOV</span><span>FEB '26</span><span>MAY</span>
+  </div>
+</section>
+
+<section class="card c-w-alloc">
+  <div class="card-label"><span class="num">02</span> Allocation <span class="divider"></span></div>
+  <div class="donut-wrap" style="margin-top: 6px;">
+    <svg width="130" height="130" viewBox="0 0 42 42">
+      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--accent)"   stroke-width="6.5" stroke-dasharray="53 47"  stroke-dashoffset="0"   transform="rotate(-90 21 21)"/>
+      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--gain)"     stroke-width="6.5" stroke-dasharray="33 67"  stroke-dashoffset="-53" transform="rotate(-90 21 21)"/>
+      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--warn)"     stroke-width="6.5" stroke-dasharray="9 91"   stroke-dashoffset="-86" transform="rotate(-90 21 21)"/>
+      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--text-mute)" stroke-width="6.5" stroke-dasharray="5 95"  stroke-dashoffset="-95" transform="rotate(-90 21 21)"/>
+    </svg>
+    <div class="donut-legend">
+      <div class="donut-row"><span class="nm"><span class="sw" style="background: var(--accent);"></span>Property eq.</span><span class="v">$980K<span class="pct">53%</span></span></div>
+      <div class="donut-row"><span class="nm"><span class="sw" style="background: var(--gain);"></span>Equities</span><span class="v">$612K<span class="pct">33%</span></span></div>
+      <div class="donut-row"><span class="nm"><span class="sw" style="background: var(--warn);"></span>Super</span><span class="v">$165K<span class="pct">9%</span></span></div>
+      <div class="donut-row"><span class="nm"><span class="sw" style="background: var(--text-mute);"></span>Cash + crypto</span><span class="v">$85K<span class="pct">5%</span></span></div>
+    </div>
+  </div>
+</section>
+
+<section class="card c-w-compound">
+  <div class="card-label"><span class="num">03</span> Path to $5M <span class="divider"></span><span class="mono dim">COMPOUND · 25Y</span></div>
+  <svg class="spark" viewBox="0 0 600 180" preserveAspectRatio="none" style="margin-top: 4px;">
+    <path d="M0,160 C 100,140 200,118 300,95 S 500,55 600,30" stroke="var(--accent)" stroke-width="1.8" fill="none" stroke-dasharray="0"/>
+    <path d="M0,160 C 100,150 200,138 300,124 S 500,100 600,82" stroke="var(--text-mute)" stroke-width="1" fill="none" stroke-dasharray="3 3"/>
+    <path d="M0,160 C 100,135 200,108 300,80 S 500,30 600,8"   stroke="var(--gain)" stroke-width="1" fill="none" stroke-dasharray="3 3"/>
+    <line x1="240" y1="0" x2="240" y2="180" stroke="var(--border)" stroke-dasharray="2 4"/>
+    <text x="246" y="14" fill="var(--text-dim)" font-family="JetBrains Mono" font-size="9">today</text>
+  </svg>
+  <div style="display: flex; justify-content: space-between; margin-top: 14px; font-family: var(--mono); font-size: 10px;">
+    <div><div class="mute" style="font-size: 9px; letter-spacing: 0.08em;">CONSERVATIVE 6%</div><div class="t2" style="font-family: var(--serif); font-size: 17px; margin-top: 3px;">$3.9M</div></div>
+    <div><div class="acc" style="font-size: 9px; letter-spacing: 0.08em;">BASE 8.5%</div><div class="acc" style="font-family: var(--serif); font-size: 17px; margin-top: 3px;">$5.2M</div></div>
+    <div><div class="gain" style="font-size: 9px; letter-spacing: 0.08em;">AGGRESSIVE 11%</div><div class="gain" style="font-family: var(--serif); font-size: 17px; margin-top: 3px;">$7.1M</div></div>
+  </div>
+</section>
+
+<section class="card c-w-savings">
+  <div class="card-label"><span class="num">04</span> Savings Rate <span class="divider"></span></div>
+  <div class="bigstat">
+    <div class="num" style="font-size: 48px;">42<span class="mute" style="font-size: 28px;">%</span></div>
+    <div class="sub">This month. YTD avg 39%.</div>
+  </div>
+  <div class="bar" style="margin-top: 14px;"><div class="f" style="width: 84%;"></div></div>
+  <div style="display: flex; justify-content: space-between; font-family: var(--mono); font-size: 9.5px; color: var(--text-mute); letter-spacing: 0.06em; margin-top: 5px;">
+    <span>$8,420 saved</span><span>target 50%</span>
+  </div>
+</section>
+
+<section class="card c-w-eofy">
+  <div class="card-label"><span class="num">05</span> EOFY Action List <span class="divider"></span><span class="mono dim acc">61 DAYS</span></div>
+  <div class="checklist">
+    <div class="item done"><div class="box"></div><span class="ti">Top up super before $30K cap</span><span class="due">21 JUN</span></div>
+    <div class="item"><div class="box"></div><span class="ti">Harvest CGT loss on TSLA position</span><span class="due">30 JUN</span></div>
+    <div class="item"><div class="box"></div><span class="ti">Pre-pay investment loan interest</span><span class="due">25 JUN</span></div>
+    <div class="item"><div class="box"></div><span class="ti">Deductions log · home office, courses</span><span class="due">30 JUN</span></div>
+    <div class="item"><div class="box"></div><span class="ti">Div293 review with accountant</span><span class="due">10 JUL</span></div>
+  </div>
+</section>
+
+<section class="card c-w-tax">
+  <div class="card-label"><span class="num">06</span> Tax Estimate · FY26 <span class="divider"></span></div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 4px;">
+    <div><div class="mono dim" style="font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase;">Gross income</div><div class="serif" style="font-size: 22px; font-weight: 400; margin-top: 3px;">$248,400</div></div>
+    <div><div class="mono dim" style="font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase;">Deductions</div><div class="serif" style="font-size: 22px; font-weight: 400; margin-top: 3px; color: var(--gain);">$31,200</div></div>
+    <div><div class="mono dim" style="font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase;">Tax payable</div><div class="serif" style="font-size: 22px; font-weight: 400; margin-top: 3px;">$67,100</div></div>
+    <div><div class="mono dim" style="font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase;">Refund est.</div><div class="serif" style="font-size: 22px; font-weight: 400; margin-top: 3px; color: var(--accent);">$4,820</div></div>
+  </div>
+  <div class="serif serif-italic dim" style="font-size: 12px; margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--border);">Lodgement window opens 1 July · file by 31 Oct.</div>
+</section>
+
+<section class="card c-w-goals">
+  <div class="card-label"><span class="num">07</span> Goals <span class="divider"></span></div>
+  <div style="margin-top: 4px;">
+    <div style="margin-bottom: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;"><span class="serif" style="font-size: 14px;">Hit $2M net worth</span><span class="mono dim" style="font-size: 10px;">87%</span></div>
+      <div class="bar"><div class="f" style="width: 87%;"></div></div>
+      <div class="mono mute" style="font-size: 9.5px; margin-top: 3px; letter-spacing: 0.05em;">$1.84M of $2M · ~5 months at current pace</div>
+    </div>
+    <div style="margin-bottom: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;"><span class="serif" style="font-size: 14px;">Build $200K cash buffer</span><span class="mono dim" style="font-size: 10px;">42%</span></div>
+      <div class="bar"><div class="f" style="width: 42%; background: var(--gain);"></div></div>
+      <div class="mono mute" style="font-size: 9.5px; margin-top: 3px; letter-spacing: 0.05em;">$85K of $200K · liquidity for next investment</div>
+    </div>
+    <div>
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;"><span class="serif" style="font-size: 14px;">Max super contribution</span><span class="mono dim" style="font-size: 10px;">68%</span></div>
+      <div class="bar"><div class="f" style="width: 68%; background: var(--warn);"></div></div>
+      <div class="mono mute" style="font-size: 9.5px; margin-top: 3px; letter-spacing: 0.05em;">$20.4K of $30K · concessional cap FY26</div>
+    </div>
+  </div>
+</section>
+
+</div>
+</section>
+<!-- end tab-wealth -->
+
+<!-- ============= MARKETS ============= -->
+<section class="tab tab-markets" data-screen-label="03 Markets">
+<div class="bento">
+
+<section class="card c-m-hero">
+  <div class="card-label"><span class="num">01</span> Portfolio P&amp;L <span class="divider"></span><span class="mono dim">TODAY · 09:42 AEST</span></div>
+  <div class="bigstat">
+    <div class="lbl gain" style="color: var(--gain);">▲ +$15,420</div>
+    <div class="num" style="margin-top: 4px;">+0.84<span class="mute" style="font-size: 36px;">%</span></div>
+    <div class="sub">NVDA, PLTR carrying. TSLA dragging. Net green.</div>
+  </div>
+  <svg class="spark" viewBox="0 0 600 80" preserveAspectRatio="none" style="margin-top: 16px;">
+    <path d="M0,50 L25,52 L50,48 L75,42 L100,46 L125,40 L150,38 L175,42 L200,36 L225,32 L250,30 L275,34 L300,28 L325,26 L350,22 L375,28 L400,24 L425,20 L450,16 L475,14 L500,18 L525,12 L550,8 L575,12 L600,6"
+      stroke="var(--gain)" stroke-width="1.5" fill="none"/>
+  </svg>
+  <div style="display: flex; justify-content: space-between; font-family: var(--mono); font-size: 9px; color: var(--text-mute); letter-spacing: 0.05em; margin-top: 4px;">
+    <span>9:30</span><span>11</span><span>12</span><span>13</span><span>14</span><span>15</span><span>16:00</span>
+  </div>
+</section>
+
+<section class="card c-m-macro">
+  <div class="card-label"><span class="num">02</span> Macro Pulse <span class="divider"></span></div>
+  <div class="line-row"><span class="nm">RBA Cash Rate</span><span class="px">4.10%</span><span class="ch">— hold</span></div>
+  <div class="line-row"><span class="nm">AUD / USD</span><span class="px">0.6582</span><span class="ch gain">▲ 0.31%</span></div>
+  <div class="line-row"><span class="nm">ASX 200</span><span class="px">8,142</span><span class="ch gain">▲ 0.42%</span></div>
+  <div class="line-row"><span class="nm">US 10Y</span><span class="px">4.28%</span><span class="ch loss">▼ 4 bps</span></div>
+  <div class="line-row"><span class="nm">Gold (USD/oz)</span><span class="px">2,381</span><span class="ch gain">▲ 0.55%</span></div>
+  <div class="line-row"><span class="nm">BTC / USD</span><span class="px">71,420</span><span class="ch loss">▼ 1.20%</span></div>
+</section>
+
+<section class="card c-m-holdings">
+  <div class="card-label"><span class="num">03</span> Core Holdings <span class="divider"></span><span class="mono dim">10 POSITIONS</span></div>
+  <div class="line-row"><span class="nm">NVDA<span class="meta" style="margin-left: 8px;">42 sh</span></span><span class="px">$144.72</span><span class="meta">$6,078</span><span class="ch gain">▲ 3.47%</span></div>
+  <div class="line-row"><span class="nm">MSFT<span class="meta" style="margin-left: 8px;">28 sh</span></span><span class="px">$464.12</span><span class="meta">$12,995</span><span class="ch gain">▲ 0.47%</span></div>
+  <div class="line-row"><span class="nm">PLTR<span class="meta" style="margin-left: 8px;">120 sh</span></span><span class="px">$82.14</span><span class="meta">$9,857</span><span class="ch gain">▲ 2.39%</span></div>
+  <div class="line-row"><span class="nm">TSLA<span class="meta" style="margin-left: 8px;">35 sh</span></span><span class="px">$291.15</span><span class="meta">$10,190</span><span class="ch loss">▼ 1.83%</span></div>
+  <div class="line-row"><span class="nm">CBA.AX<span class="meta" style="margin-left: 8px;">85 sh</span></span><span class="px">$152.40</span><span class="meta">$12,954</span><span class="ch gain">▲ 0.51%</span></div>
+  <div class="line-row"><span class="nm">VAS.AX<span class="meta" style="margin-left: 8px;">240 sh</span></span><span class="px">$99.86</span><span class="meta">$23,966</span><span class="ch gain">▲ 0.22%</span></div>
+  <div class="line-row"><span class="nm">BHP.AX<span class="meta" style="margin-left: 8px;">300 sh</span></span><span class="px">$41.22</span><span class="meta">$12,366</span><span class="ch loss">▼ 0.82%</span></div>
+  <div class="line-row"><span class="nm">VGS.AX<span class="meta" style="margin-left: 8px;">180 sh</span></span><span class="px">$118.20</span><span class="meta">$21,276</span><span class="ch gain">▲ 0.34%</span></div>
+</section>
+
+<section class="card c-m-watch">
+  <div class="card-label"><span class="num">04</span> Watchlist <span class="divider"></span></div>
+  <div class="line-row"><span class="nm">AAPL</span><span class="px">$214.18</span><span class="ch gain">▲ 0.62%</span></div>
+  <div class="line-row"><span class="nm">META</span><span class="px">$522.80</span><span class="ch loss">▼ 0.41%</span></div>
+  <div class="line-row"><span class="nm">AMZN</span><span class="px">$184.32</span><span class="ch gain">▲ 1.15%</span></div>
+  <div class="line-row"><span class="nm">GOOGL</span><span class="px">$172.94</span><span class="ch gain">▲ 0.28%</span></div>
+  <div class="line-row"><span class="nm">RKLB</span><span class="px">$8.42</span><span class="ch gain">▲ 4.18%</span></div>
+  <div class="line-row"><span class="nm">NDQ.AX</span><span class="px">$48.12</span><span class="ch gain">▲ 0.61%</span></div>
+</section>
+
+<section class="card c-m-earnings">
+  <div class="card-label"><span class="num">05</span> Earnings · Next 7 Days <span class="divider"></span></div>
+  <div class="line-row"><span class="meta" style="width: 60px;">MON 5/4</span><span class="nm">PLTR</span><span class="ch warn-c">est $0.09</span></div>
+  <div class="line-row"><span class="meta" style="width: 60px;">TUE 5/5</span><span class="nm">UBER</span><span class="ch warn-c">est $0.51</span></div>
+  <div class="line-row"><span class="meta" style="width: 60px;">WED 5/6</span><span class="nm">CBA.AX</span><span class="ch warn-c">3Q upd.</span></div>
+  <div class="line-row"><span class="meta" style="width: 60px;">THU 5/7</span><span class="nm">DIS</span><span class="ch warn-c">est $1.20</span></div>
+  <div class="line-row"><span class="meta" style="width: 60px;">FRI 5/8</span><span class="nm">RBA Statement</span><span class="ch">macro</span></div>
+</section>
+
+<section class="card c-m-summary">
+  <div class="card-label"><span class="num">06</span> What changed for me today <span class="divider"></span></div>
+  <div class="serif" style="font-size: 16px; font-weight: 300; line-height: 1.55; color: var(--text-2); margin-top: 4px;">
+    NVDA carried the book — Jensen's keynote shifted analyst PTs to <span class="acc">$180+</span>. PLTR followed on government-contract tailwind. <span class="serif-italic">TSLA softened</span> after delivery miss; you're still net-positive on cost basis. <span class="serif-italic">RBA held rates</span> — dovish tone but no cut yet. Macro environment for property remains <span class="acc">favourable</span>.
+  </div>
+</section>
+
+</div>
+</section>
+<!-- end tab-markets -->
+
+<!-- ============= PROPERTY ============= -->
+<section class="tab tab-property" data-screen-label="04 Property">
+<div class="bento">
+
+<section class="card c-p-hero">
+  <div class="card-label"><span class="num">01</span> Schofields · 14 Aspect Way <span class="divider"></span><span class="mono dim">EST. VALUATION</span></div>
+  <div class="bigstat">
+    <div class="num">$1.31<span class="mute" style="font-size: 36px;">M</span></div>
+    <div class="sub">CoreLogic AVM · 4 bd · 2 ba · 528 m² · acquired 2023.</div>
+    <div class="delta gain">▲ $164,000 since purchase <span class="mute" style="margin-left: 6px;">+14.3%</span></div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 22px; padding-top: 18px; border-top: 1px dashed var(--border);">
+    <div><div class="mono dim" style="font-size: 9px; letter-spacing: 0.1em;">EQUITY</div><div class="serif" style="font-size: 19px; font-weight: 400; margin-top: 3px;">$540K</div></div>
+    <div><div class="mono dim" style="font-size: 9px; letter-spacing: 0.1em;">LVR</div><div class="serif" style="font-size: 19px; font-weight: 400; margin-top: 3px;">58.8%</div></div>
+    <div><div class="mono dim" style="font-size: 9px; letter-spacing: 0.1em;">RENT YIELD</div><div class="serif" style="font-size: 19px; font-weight: 400; margin-top: 3px; color: var(--gain);">3.4%</div></div>
+    <div><div class="mono dim" style="font-size: 9px; letter-spacing: 0.1em;">12M GROWTH</div><div class="serif" style="font-size: 19px; font-weight: 400; margin-top: 3px; color: var(--accent);">+6.4%</div></div>
+  </div>
+</section>
+
+<section class="card c-p-mortgage">
+  <div class="card-label"><span class="num">02</span> Mortgage <span class="divider"></span><span class="mono dim">CBA · VARIABLE</span></div>
+  <div style="margin-top: 4px;">
+    <div class="mono dim" style="font-size: 9.5px; letter-spacing: 0.1em;">BALANCE</div>
+    <div class="mort-num">$770,000</div>
+  </div>
+  <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 12px;">
+    <div><div class="mono dim" style="font-size: 9px; letter-spacing: 0.1em;">RATE</div><div class="serif" style="font-size: 19px; font-weight: 400;">6.14%</div></div>
+    <div><div class="mono dim" style="font-size: 9px; letter-spacing: 0.1em;">MONTHLY</div><div class="serif" style="font-size: 19px; font-weight: 400;">$4,720</div></div>
+    <div><div class="mono dim" style="font-size: 9px; letter-spacing: 0.1em;">PAYOFF</div><div class="serif" style="font-size: 19px; font-weight: 400;">2049</div></div>
+  </div>
+  <div class="mort-bar">
+    <div class="princ" style="width: 31%;"></div>
+    <div class="int" style="width: 69%;"></div>
+  </div>
+  <div class="mort-key">
+    <span><span class="sw" style="background: var(--accent);"></span>Principal $1,460</span>
+    <span><span class="sw" style="background: var(--text-mute);"></span>Interest $3,260</span>
+  </div>
+  <div class="serif serif-italic dim" style="font-size: 12px; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border);">$680 extra repayment this month · cuts 4y3m off term.</div>
+</section>
+
+<section class="card c-p-yield">
+  <div class="card-label"><span class="num">03</span> Yield vs Mortgage Rate · 24M <span class="divider"></span></div>
+  <svg class="spark" viewBox="0 0 600 140" preserveAspectRatio="none" style="margin-top: 4px;">
+    <path d="M0,40 L25,42 L50,46 L75,52 L100,58 L125,55 L150,50 L175,48 L200,52 L225,58 L250,64 L275,68 L300,72 L325,68 L350,64 L375,60 L400,56 L425,52 L450,48 L475,44 L500,40 L525,38 L550,34 L575,32 L600,30"
+      stroke="var(--loss)" stroke-width="1.6" fill="none"/>
+    <path d="M0,80 L25,82 L50,84 L75,86 L100,88 L125,90 L150,92 L175,94 L200,96 L225,96 L250,94 L275,92 L300,90 L325,88 L350,86 L375,84 L400,82 L425,80 L450,78 L475,76 L500,74 L525,72 L550,70 L575,68 L600,66"
+      stroke="var(--gain)" stroke-width="1.6" fill="none"/>
+    <text x="6" y="22" font-family="JetBrains Mono" font-size="9" fill="var(--loss)">MORTGAGE 6.14%</text>
+    <text x="6" y="116" font-family="JetBrains Mono" font-size="9" fill="var(--gain)">RENT YIELD 3.4%</text>
+  </svg>
+  <div class="serif serif-italic dim" style="font-size: 12px; margin-top: 8px;">Spread narrowing — RBA cut would tip Schofields cashflow-positive for first time.</div>
+</section>
+
+<section class="card c-p-suburbs">
+  <div class="card-label"><span class="num">04</span> NW Sydney · Suburbs <span class="divider"></span></div>
+  <div class="line-row"><span class="nm">Schofields</span><span class="px">$1.29M</span><span class="ch gain">▲ 6.4%</span></div>
+  <div class="line-row"><span class="nm">Marsden Park</span><span class="px">$1.18M</span><span class="ch gain">▲ 7.2%</span></div>
+  <div class="line-row"><span class="nm">The Ponds</span><span class="px">$1.42M</span><span class="ch gain">▲ 5.1%</span></div>
+  <div class="line-row"><span class="nm">Box Hill</span><span class="px">$1.22M</span><span class="ch gain">▲ 8.4%</span></div>
+  <div class="line-row"><span class="nm">Rouse Hill</span><span class="px">$1.54M</span><span class="ch gain">▲ 4.0%</span></div>
+  <div class="line-row"><span class="nm">Tallawong</span><span class="px">$1.04M</span><span class="ch gain">▲ 9.1%</span></div>
+  <div class="line-row"><span class="nm">Riverstone</span><span class="px">$1.10M</span><span class="ch gain">▲ 5.8%</span></div>
+</section>
+
+<section class="card c-p-deals">
+  <div class="card-label"><span class="num">05</span> Deal Spotter <span class="divider"></span><span class="mono dim acc">3 MATCHES</span></div>
+  <div class="deal">
+    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+      <span class="addr">12 Allingham St, Schofields</span>
+      <span class="mono acc" style="font-size: 10px;">$1,155K</span>
+    </div>
+    <div class="meta"><span>4·2·2 · 462 m²</span><span>DOM 18</span><span class="acc">10.5% under median</span></div>
+    <div class="why">Walk-through today 13:30. Rent appraisal $720/wk → 3.2% gross.</div>
+  </div>
+  <div class="deal">
+    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+      <span class="addr">8 Forrester Rd, Marsden Park</span>
+      <span class="mono acc" style="font-size: 10px;">$1,090K</span>
+    </div>
+    <div class="meta"><span>4·2·2 · 504 m²</span><span>DOM 32</span><span class="acc">7.6% under median</span></div>
+    <div class="why">Vendor motivated · second listing. Bigger block, side access.</div>
+  </div>
+  <div class="deal">
+    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+      <span class="addr">21 Brookman St, Tallawong</span>
+      <span class="mono acc" style="font-size: 10px;">$985K</span>
+    </div>
+    <div class="meta"><span>3·2·1 · 380 m²</span><span>DOM 9</span><span class="acc">300m to metro</span></div>
+    <div class="why">Train-line proximity, strong rental demand. Yield ~3.6%.</div>
+  </div>
+</section>
+
+<section class="card c-p-reminders">
+  <div class="card-label"><span class="num">06</span> Reminders <span class="divider"></span></div>
+  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;">
+    <div><div class="mono dim" style="font-size: 9px; letter-spacing: 0.1em;">COUNCIL RATES</div><div class="serif" style="font-size: 16px; margin-top: 3px;">$612 · 15 May</div></div>
+    <div><div class="mono dim" style="font-size: 9px; letter-spacing: 0.1em;">STRATA</div><div class="serif" style="font-size: 16px; margin-top: 3px;">— N/A</div></div>
+    <div><div class="mono dim" style="font-size: 9px; letter-spacing: 0.1em;">INSURANCE</div><div class="serif" style="font-size: 16px; margin-top: 3px;">$1,840 · 12 Jul</div></div>
+    <div><div class="mono dim" style="font-size: 9px; letter-spacing: 0.1em;">LAND TAX</div><div class="serif" style="font-size: 16px; margin-top: 3px;">$2,150 · 30 Sep</div></div>
+  </div>
+</section>
+
+</div>
+</section>
+<!-- end tab-property -->
+
+<!-- ============= BUILD ============= -->
+<section class="tab tab-build" data-screen-label="05 Build">
+<div class="bento">
+
+<section class="card c-b-active">
+  <div class="card-label"><span class="num">01</span> Now Building <span class="divider"></span><span class="mono dim acc">● LIVE · 14 COMMITS TODAY</span></div>
+  <div style="margin-top: 4px;">
+    <div class="serif" style="font-size: 28px; font-weight: 400; line-height: 1.1;">openclaw / agent-mesh</div>
+    <div class="serif serif-italic dim" style="font-size: 14px; margin-top: 6px;">feat/mcp-streaming · merging into main in ~45m</div>
+  </div>
+  <div class="bar" style="margin-top: 18px;"><div class="f" style="width: 64%;"></div></div>
+  <div style="display: flex; justify-content: space-between; font-family: var(--mono); font-size: 9.5px; color: var(--text-mute); margin-top: 5px; letter-spacing: 0.06em;">
+    <span>412 LINES CHANGED · 27 FILES</span><span>64% OF SPRINT</span>
+  </div>
+  <div style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--border);">
+    <div class="mono dim" style="font-size: 9.5px; letter-spacing: 0.1em; margin-bottom: 8px;">RECENT COMMITS</div>
+    <div style="font-family: var(--mono); font-size: 11px; color: var(--text-2); line-height: 1.7;">
+      <div><span class="mute" style="font-size: 9.5px;">a3f8e2</span> &nbsp; <span class="acc">feat:</span> stream tool-use deltas through MCP transport</div>
+      <div><span class="mute" style="font-size: 9.5px;">b91c70</span> &nbsp; <span class="acc">fix:</span> drop stale cache entries on schema change</div>
+      <div><span class="mute" style="font-size: 9.5px;">c204aa</span> &nbsp; <span style="color: var(--gain);">test:</span> cover concurrent agent ingest path</div>
+      <div><span class="mute" style="font-size: 9.5px;">d711b3</span> &nbsp; <span style="color: var(--text-dim);">chore:</span> bump @anthropic-ai/sdk to 0.32</div>
+    </div>
+  </div>
+</section>
+
+<section class="card c-b-llm">
+  <div class="card-label"><span class="num">02</span> LLM Spend · MTD <span class="divider"></span><span class="mono dim">MAY 2026</span></div>
+  <div class="bigstat">
+    <div class="num" style="font-size: 48px;">$271<span class="mute" style="font-size: 24px;">.40</span></div>
+    <div class="sub">Of $500 budget · 54% used.</div>
+  </div>
+  <div style="margin-top: 18px;">
+    <div style="margin-bottom: 10px;">
+      <div style="display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10px; margin-bottom: 4px;"><span>Claude Sonnet 4.5</span><span class="t2">$184.20</span></div>
+      <div class="bar"><div class="f" style="width: 68%;"></div></div>
+    </div>
+    <div style="margin-bottom: 10px;">
+      <div style="display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10px; margin-bottom: 4px;"><span>Claude Haiku 4.5</span><span class="t2">$48.80</span></div>
+      <div class="bar"><div class="f" style="width: 28%; background: var(--gain);"></div></div>
+    </div>
+    <div>
+      <div style="display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10px; margin-bottom: 4px;"><span>Claude Opus 4</span><span class="t2">$38.40</span></div>
+      <div class="bar"><div class="f" style="width: 18%; background: var(--warn);"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="card c-b-repos">
+  <div class="card-label"><span class="num">03</span> Repos · 7d Activity <span class="divider"></span></div>
+  <div class="line-row"><span class="nm">openclaw / agent-mesh</span><span class="meta">main · TS</span><span class="ch acc">▲ 142</span></div>
+  <div class="line-row"><span class="nm">openclaw / claude-pipelines</span><span class="meta">v0.4 · TS</span><span class="ch acc">▲ 88</span></div>
+  <div class="line-row"><span class="nm">vish / dashboard</span><span class="meta">main · HTML</span><span class="ch acc">▲ 37</span></div>
+  <div class="line-row"><span class="nm">openclaw / mcp-tools</span><span class="meta">main · Py</span><span class="ch acc">▲ 24</span></div>
+  <div class="line-row"><span class="nm">vish / property-radar</span><span class="meta">dev · TS</span><span class="ch acc">▲ 12</span></div>
+  <div class="line-row"><span class="nm">openclaw / docs</span><span class="meta">main · MD</span><span class="ch acc">▲ 6</span></div>
+</section>
+
+<section class="card c-b-agents">
+  <div class="card-label"><span class="num">04</span> Agents <span class="divider"></span></div>
+  <div class="line-row"><span class="nm" style="display: flex; gap: 8px; align-items: center;"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--gain); box-shadow: 0 0 6px var(--gain);"></span>research-scout</span><span class="meta">2m ago</span><span class="ch gain">ACTIVE</span></div>
+  <div class="line-row"><span class="nm" style="display: flex; gap: 8px; align-items: center;"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--gain); box-shadow: 0 0 6px var(--gain);"></span>news-summariser</span><span class="meta">8m ago</span><span class="ch gain">ACTIVE</span></div>
+  <div class="line-row"><span class="nm" style="display: flex; gap: 8px; align-items: center;"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--text-mute);"></span>property-watcher</span><span class="meta">1h ago</span><span class="ch" style="color: var(--text-mute);">IDLE</span></div>
+  <div class="line-row"><span class="nm" style="display: flex; gap: 8px; align-items: center;"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--loss);"></span>portfolio-rebalancer</span><span class="meta">3h ago</span><span class="ch loss">ERROR</span></div>
+</section>
+
+<section class="card c-b-cron">
+  <div class="card-label"><span class="num">05</span> Cron · Next Runs <span class="divider"></span></div>
+  <div class="line-row"><span class="nm">portfolio-snapshot</span><span class="meta">in 18m</span><span class="ch">hourly</span></div>
+  <div class="line-row"><span class="nm">news-digest</span><span class="meta">06:00 daily</span><span class="ch">12h</span></div>
+  <div class="line-row"><span class="nm">property-scrape</span><span class="meta">07:00 mon</span><span class="ch">weekly</span></div>
+  <div class="line-row"><span class="nm">eofy-tax-check</span><span class="meta">1 jun</span><span class="ch warn-c">31d</span></div>
+  <div class="line-row"><span class="nm">repo-backup</span><span class="meta">02:00 daily</span><span class="ch">12h</span></div>
+</section>
+
+<section class="card c-b-ideas">
+  <div class="card-label"><span class="num">06</span> Ideas Backlog <span class="divider"></span><span class="mono dim">8 CAPTURED</span></div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px;">
+    <div class="serif" style="font-size: 13.5px; line-height: 1.4; padding: 6px 0; border-bottom: 1px dashed var(--border);"><span class="mono mute" style="font-size: 9px; margin-right: 8px;">01</span>Voice-first Claude desktop launcher</div>
+    <div class="serif" style="font-size: 13.5px; line-height: 1.4; padding: 6px 0; border-bottom: 1px dashed var(--border);"><span class="mono mute" style="font-size: 9px; margin-right: 8px;">02</span>MCP server for Schwab / Stake portfolio sync</div>
+    <div class="serif" style="font-size: 13.5px; line-height: 1.4; padding: 6px 0; border-bottom: 1px dashed var(--border);"><span class="mono mute" style="font-size: 9px; margin-right: 8px;">03</span>Property AVM agent — Domain + CoreLogic blend</div>
+    <div class="serif" style="font-size: 13.5px; line-height: 1.4; padding: 6px 0; border-bottom: 1px dashed var(--border);"><span class="mono mute" style="font-size: 9px; margin-right: 8px;">04</span>Personal RAG over Apple Notes + Things</div>
+    <div class="serif" style="font-size: 13.5px; line-height: 1.4; padding: 6px 0;"><span class="mono mute" style="font-size: 9px; margin-right: 8px;">05</span>ServiceNow CHG drafter from voice memo</div>
+    <div class="serif" style="font-size: 13.5px; line-height: 1.4; padding: 6px 0;"><span class="mono mute" style="font-size: 9px; margin-right: 8px;">06</span>EOFY tax-prep pipeline with bank CSV ingest</div>
+    <div class="serif" style="font-size: 13.5px; line-height: 1.4; padding: 6px 0;"><span class="mono mute" style="font-size: 9px; margin-right: 8px;">07</span>F1 strategist · live race telemetry summary</div>
+    <div class="serif" style="font-size: 13.5px; line-height: 1.4; padding: 6px 0;"><span class="mono mute" style="font-size: 9px; margin-right: 8px;">08</span>Daily-journal agent with weekly retro digest</div>
+  </div>
+</section>
+
+</div>
+</section>
+<!-- end tab-build -->
+
+<!-- ============= WORK ============= -->
+<section class="tab tab-work" data-screen-label="06 Work">
+<div class="bento">
+
+<section class="card c-wk-sprint">
+  <div class="card-label"><span class="num">01</span> Sprint · 26.10 <span class="divider"></span><span class="mono dim">DAY 8 OF 10 · 28/40 PTS</span></div>
+  <div class="k-cols" style="margin-top: 4px;">
+    <div class="k-col">
+      <h5>To Do <span>3</span></h5>
+      <div class="k-tk"><div style="display: flex; justify-content: space-between;"><span class="id">CHG0018804</span><span class="pri pri-p1">P1</span></div><div class="ti">CMDB sync · introspection layer for agent-discovery</div><div class="meta"><span>5 pts</span><span>Vish</span></div></div>
+      <div class="k-tk"><div style="display: flex; justify-content: space-between;"><span class="id">INC0142891</span><span class="pri pri-p2">P2</span></div><div class="ti">Workflow latency · SLA dashboard widget</div><div class="meta"><span>3 pts</span><span>Mei</span></div></div>
+      <div class="k-tk"><div style="display: flex; justify-content: space-between;"><span class="id">STRY0091</span><span class="pri pri-p2">P2</span></div><div class="ti">Add break-glass auth for prod-readonly role</div><div class="meta"><span>4 pts</span><span>Devi</span></div></div>
+    </div>
+    <div class="k-col">
+      <h5>In Progress <span>2</span></h5>
+      <div class="k-tk"><div style="display: flex; justify-content: space-between;"><span class="id">CHG0018801</span><span class="pri pri-p0">P0</span></div><div class="ti">Approve scoped-app deploy · vendor integration</div><div class="meta"><span>8 pts</span><span>Vish</span></div></div>
+      <div class="k-tk"><div style="display: flex; justify-content: space-between;"><span class="id">STRY0088</span><span class="pri pri-p1">P1</span></div><div class="ti">Catalog item · self-serve VPN access request</div><div class="meta"><span>5 pts</span><span>Hari</span></div></div>
+    </div>
+    <div class="k-col">
+      <h5>Done <span>4</span></h5>
+      <div class="k-tk"><div style="display: flex; justify-content: space-between;"><span class="id">CHG0018795</span><span class="pri pri-p1">P1</span></div><div class="ti">Patch · scoped app v3.2.1 → 3.2.4</div><div class="meta"><span>3 pts</span><span>Vish</span></div></div>
+      <div class="k-tk"><div style="display: flex; justify-content: space-between;"><span class="id">STRY0086</span><span class="pri pri-p2">P2</span></div><div class="ti">Workflow refactor · approval branching</div><div class="meta"><span>8 pts</span><span>Mei</span></div></div>
+      <div class="k-tk"><div style="display: flex; justify-content: space-between;"><span class="id">INC0142884</span><span class="pri pri-p1">P1</span></div><div class="ti">Stale records · CMDB cleanup script</div><div class="meta"><span>5 pts</span><span>Devi</span></div></div>
+      <div class="k-tk"><div style="display: flex; justify-content: space-between;"><span class="id">STRY0085</span><span class="pri pri-p2">P2</span></div><div class="ti">UAT signoff · Quarter-end change calendar</div><div class="meta"><span>3 pts</span><span>Hari</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="card c-wk-sla">
+  <div class="card-label"><span class="num">02</span> SLA <span class="divider"></span><span class="mono dim">3 OPEN</span></div>
+  <div class="ring-block">
+    <svg width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" stroke="var(--border)" stroke-width="3" fill="none"/><circle cx="20" cy="20" r="16" stroke="var(--loss)" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="100" stroke-dashoffset="22" transform="rotate(-90 20 20)"/></svg>
+    <div><div class="lbl">INC0142891</div><div class="v">2h 14m</div><div class="sub" style="color: var(--loss);">BREACH RISK · P1</div></div>
+  </div>
+  <div class="ring-block">
+    <svg width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" stroke="var(--border)" stroke-width="3" fill="none"/><circle cx="20" cy="20" r="16" stroke="var(--warn)" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="100" stroke-dashoffset="48" transform="rotate(-90 20 20)"/></svg>
+    <div><div class="lbl">CHG0018801</div><div class="v">5h 40m</div><div class="sub" style="color: var(--warn);">WATCH · P0</div></div>
+  </div>
+  <div class="ring-block">
+    <svg width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" stroke="var(--border)" stroke-width="3" fill="none"/><circle cx="20" cy="20" r="16" stroke="var(--gain)" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="100" stroke-dashoffset="78" transform="rotate(-90 20 20)"/></svg>
+    <div><div class="lbl">INC0142902</div><div class="v">14h 02m</div><div class="sub" style="color: var(--gain);">HEALTHY · P2</div></div>
+  </div>
+</section>
+
+<section class="card c-wk-velocity">
+  <div class="card-label"><span class="num">03</span> Velocity · Last 6 Sprints <span class="divider"></span></div>
+  <svg viewBox="0 0 300 90" style="width: 100%; margin-top: 4px;">
+    <g>
+      <rect x="10"  y="34" width="32" height="50" fill="var(--accent)" opacity="0.85" rx="3"/>
+      <rect x="58"  y="22" width="32" height="62" fill="var(--accent)" opacity="0.85" rx="3"/>
+      <rect x="106" y="40" width="32" height="44" fill="var(--accent)" opacity="0.85" rx="3"/>
+      <rect x="154" y="28" width="32" height="56" fill="var(--accent)" opacity="0.85" rx="3"/>
+      <rect x="202" y="18" width="32" height="66" fill="var(--accent)" opacity="0.85" rx="3"/>
+      <rect x="250" y="46" width="32" height="38" fill="var(--accent-2)" opacity="1" rx="3"/>
+    </g>
+    <text x="26"  y="80" font-family="JetBrains Mono" font-size="8.5" fill="var(--text-mute)" text-anchor="middle">.05</text>
+    <text x="74"  y="80" font-family="JetBrains Mono" font-size="8.5" fill="var(--text-mute)" text-anchor="middle">.06</text>
+    <text x="122" y="80" font-family="JetBrains Mono" font-size="8.5" fill="var(--text-mute)" text-anchor="middle">.07</text>
+    <text x="170" y="80" font-family="JetBrains Mono" font-size="8.5" fill="var(--text-mute)" text-anchor="middle">.08</text>
+    <text x="218" y="80" font-family="JetBrains Mono" font-size="8.5" fill="var(--text-mute)" text-anchor="middle">.09</text>
+    <text x="266" y="80" font-family="JetBrains Mono" font-size="8.5" fill="var(--accent)" text-anchor="middle">.10</text>
+  </svg>
+  <div style="display: flex; justify-content: space-between; font-family: var(--mono); font-size: 9.5px; color: var(--text-mute); letter-spacing: 0.06em; margin-top: 4px;"><span>AVG 38 PTS</span><span>CURRENT 28 / 40 (D8)</span></div>
+</section>
+
+<section class="card c-wk-deploys">
+  <div class="card-label"><span class="num">04</span> Upcoming Deploys <span class="divider"></span></div>
+  <div class="line-row"><span class="meta" style="width: 84px;">FRI 18:00</span><span class="nm">scoped-app v3.2.5</span><span class="ch">prod · low</span></div>
+  <div class="line-row"><span class="meta" style="width: 84px;">SAT 22:00</span><span class="nm">CMDB schema v8</span><span class="ch warn-c">prod · med</span></div>
+  <div class="line-row"><span class="meta" style="width: 84px;">MON 09:00</span><span class="nm">portal facelift · UAT</span><span class="ch">uat · low</span></div>
+</section>
+
+<section class="card c-wk-tickets">
+  <div class="card-label"><span class="num">05</span> My Tickets <span class="divider"></span><span class="mono dim">5 ASSIGNED</span></div>
+  <div class="line-row"><span class="meta" style="width: 84px;">CHG0018801</span><span class="nm">Approve scoped-app deploy</span><span class="ch acc">P0 · today</span></div>
+  <div class="line-row"><span class="meta" style="width: 84px;">CHG0018804</span><span class="nm">CMDB sync · introspection layer</span><span class="ch warn-c">P1 · 2d</span></div>
+  <div class="line-row"><span class="meta" style="width: 84px;">STRY0091</span><span class="nm">Break-glass auth role</span><span class="ch">P2 · 4d</span></div>
+  <div class="line-row"><span class="meta" style="width: 84px;">INC0142882</span><span class="nm">Workflow latency root cause</span><span class="ch">P2 · 5d</span></div>
+  <div class="line-row"><span class="meta" style="width: 84px;">CHG0018810</span><span class="nm">Bulk role-mining for app catalog</span><span class="ch">P3 · 7d</span></div>
+</section>
+
+<section class="card c-wk-meetings">
+  <div class="card-label"><span class="num">06</span> Meetings · Today <span class="divider"></span></div>
+  <div class="line-row"><span class="meta" style="width: 60px;">10:00</span><span class="nm">Standup · platform</span><span class="ch">15m</span></div>
+  <div class="line-row"><span class="meta" style="width: 60px;">11:30</span><span class="nm">1:1 with Manager (Anu)</span><span class="ch acc">30m</span></div>
+  <div class="line-row"><span class="meta" style="width: 60px;">14:00</span><span class="nm">CHG review board</span><span class="ch">45m</span></div>
+  <div class="line-row"><span class="meta" style="width: 60px;">16:00</span><span class="nm">Sprint demo prep</span><span class="ch">30m</span></div>
+  <div class="serif serif-italic dim" style="font-size: 12px; margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border);">1:1 prep · raise EOFY leave window, scope of agent-mesh integration with platform.</div>
+</section>
+
+</div>
+</section>
+<!-- end tab-work -->
+
+<!-- ============= LIFE ============= -->
+<section class="tab tab-life" data-screen-label="07 Life">
+<div class="bento">
+
+<section class="card c-l-quote">
+  <div class="card-label"><span class="num">01</span> Morning Reflection <span class="divider"></span></div>
+  <div class="serif" style="font-size: 26px; font-weight: 300; line-height: 1.3; font-style: italic; color: var(--text-2); margin-top: 8px;">
+    "Compounding works in every direction — money, knowledge, relationships, regret. Choose what you want to compound, daily."
+  </div>
+  <div class="mono mute" style="font-size: 10px; letter-spacing: 0.12em; margin-top: 16px;">— ROTATING · DAILY</div>
+</section>
+
+<section class="card c-l-sun">
+  <div class="card-label"><span class="num">02</span> Sun · Schofields <span class="divider"></span></div>
+  <div class="sun-arc">
+    <svg viewBox="0 0 280 80" preserveAspectRatio="none">
+      <path d="M 10,75 Q 140,-20 270,75" stroke="var(--border)" stroke-width="1" fill="none" stroke-dasharray="3 3"/>
+      <path d="M 10,75 Q 140,-20 165,40" stroke="var(--accent)" stroke-width="2" fill="none"/>
+      <circle cx="165" cy="40" r="5" fill="var(--accent)"/>
+      <text x="10" y="78" fill="var(--text-mute)" font-family="JetBrains Mono" font-size="8">06:14</text>
+      <text x="240" y="78" fill="var(--text-mute)" font-family="JetBrains Mono" font-size="8">17:38</text>
+    </svg>
+  </div>
+  <div class="sun-info">
+    <span><span class="mute" style="font-size: 9px;">GOLDEN HR</span> <span class="v">17:00–17:38</span></span>
+    <span><span class="mute" style="font-size: 9px;">DAY LENGTH</span> <span class="v">11h 24m</span></span>
+  </div>
+</section>
+
+<section class="card c-l-reading">
+  <div class="card-label"><span class="num">03</span> Reading <span class="divider"></span><span class="mono dim acc">12-DAY STREAK</span></div>
+  <div style="display: flex; gap: 18px; align-items: flex-start; margin-top: 4px;">
+    <div class="book-cover">QF</div>
+    <div class="book-card" style="flex: 1;">
+      <div class="title">Quantitative Finance for Practitioners</div>
+      <div class="author">Paul Wilmott</div>
+      <div class="pages">PAGE 184 / 612 · 30%</div>
+      <div class="bar" style="margin-top: 8px;"><div class="f" style="width: 30%;"></div></div>
+    </div>
+  </div>
+  <div style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--border);">
+    <div class="mono dim" style="font-size: 9.5px; letter-spacing: 0.1em; margin-bottom: 8px;">UP NEXT</div>
+    <div class="serif" style="font-size: 13px; line-height: 1.5; font-weight: 400;">The Almanack of Naval Ravikant <span class="mute" style="font-size: 11px;">· Eric Jorgenson</span></div>
+    <div class="serif" style="font-size: 13px; line-height: 1.5; font-weight: 400;">Working Backwards <span class="mute" style="font-size: 11px;">· Bryar &amp; Carr</span></div>
+    <div class="serif" style="font-size: 13px; line-height: 1.5; font-weight: 400;">Skin in the Game <span class="mute" style="font-size: 11px;">· N. N. Taleb</span></div>
+  </div>
+</section>
+
+<section class="card c-l-f1 f1-card">
+  <div class="card-label"><span class="num">04</span> Formula 1 <span class="divider"></span><span class="mono dim">RD 5 · MIAMI</span></div>
+  <div style="margin-top: 4px;">
+    <div class="num">3<span class="mute" style="font-size: 24px;">d</span> 14<span class="mute" style="font-size: 24px;">h</span></div>
+    <div class="when">to lights-out · Sun 4 May, 05:00 AEST</div>
+  </div>
+  <div class="standings">
+    <div class="mono mute" style="font-size: 9px; letter-spacing: 0.12em; margin-bottom: 6px;">DRIVERS · 2026</div>
+    <div class="driver"><span class="pos">1</span><span class="nm">Verstappen</span><span class="pts">112</span></div>
+    <div class="driver fav"><span class="pos">2</span><span class="nm">Norris ★</span><span class="pts">98</span></div>
+    <div class="driver"><span class="pos">3</span><span class="nm">Leclerc</span><span class="pts">87</span></div>
+    <div class="driver"><span class="pos">4</span><span class="nm">Piastri</span><span class="pts">82</span></div>
+    <div class="driver"><span class="pos">5</span><span class="nm">Russell</span><span class="pts">71</span></div>
+  </div>
+</section>
+
+<section class="card c-l-rituals">
+  <div class="card-label"><span class="num">05</span> Rituals <span class="divider"></span></div>
+  <div class="ring-block" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+    <svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" stroke="var(--border)" stroke-width="3.2" fill="none"/><circle cx="23" cy="23" r="19" stroke="var(--accent)" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-dasharray="119" stroke-dashoffset="12" transform="rotate(-90 23 23)"/></svg>
+    <div><div class="lbl">DEEP WORK</div><div class="v">12d <span class="mute mono" style="font-size: 10px;">streak</span></div></div>
+  </div>
+  <div class="ring-block" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+    <svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" stroke="var(--border)" stroke-width="3.2" fill="none"/><circle cx="23" cy="23" r="19" stroke="var(--gain)" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-dasharray="119" stroke-dashoffset="35" transform="rotate(-90 23 23)"/></svg>
+    <div><div class="lbl">EXERCISE</div><div class="v">8d <span class="mute mono" style="font-size: 10px;">streak</span></div></div>
+  </div>
+  <div class="ring-block" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+    <svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" stroke="var(--border)" stroke-width="3.2" fill="none"/><circle cx="23" cy="23" r="19" stroke="var(--warn)" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-dasharray="119" stroke-dashoffset="56" transform="rotate(-90 23 23)"/></svg>
+    <div><div class="lbl">JOURNAL</div><div class="v">5d <span class="mute mono" style="font-size: 10px;">streak</span></div></div>
+  </div>
+</section>
+
+<section class="card c-l-travel">
+  <div class="card-label"><span class="num">06</span> Travel <span class="divider"></span></div>
+  <div class="life-list">
+    <div class="item"><span class="when">10–17 JUN</span><span class="what">Hyderabad · home</span><span class="who">family</span></div>
+    <div class="item"><span class="when">22–25 AUG</span><span class="what">Melbourne · long weekend</span><span class="who">priya + kids</span></div>
+    <div class="item"><span class="when">14–21 OCT</span><span class="what">Tokyo · F1 Japan + city</span><span class="who">solo</span></div>
+    <div class="item"><span class="when">DEC</span><span class="what">Goa · planning</span><span class="who">family</span></div>
+  </div>
+</section>
+
+<section class="card c-l-family">
+  <div class="card-label"><span class="num">07</span> Family · This Month <span class="divider"></span></div>
+  <div class="life-list">
+    <div class="item"><span class="when">3 MAY</span><span class="what">Mum's birthday · call before 10am IST</span><span class="who">call</span></div>
+    <div class="item"><span class="when">11 MAY</span><span class="what">Mother's Day AU · brunch with Priya's mum</span><span class="who">+kids</span></div>
+    <div class="item"><span class="when">18 MAY</span><span class="what">Anniversary · 9 years</span><span class="who acc">priya</span></div>
+    <div class="item"><span class="when">26 MAY</span><span class="what">Aarav's school concert</span><span class="who">family</span></div>
+  </div>
+</section>
+
+</div>
+</section>
+<!-- end tab-life -->
+
+</div>
+
+<div class="tweak-chip" onclick="document.getElementById('tweaksPop').classList.toggle('open')">
+  <span>⚙</span><span>Tune</span>
+</div>
+
+<div class="tweaks-pop" id="tweaksPop">
+  <h4>Ambient · Tune</h4>
+
+  <div class="row">
+    <div class="k">Theme</div>
+    <div class="theme-toggle" id="themeToggle">
+      <button data-v="dark" class="on">DARK</button>
+      <button data-v="light">LIGHT</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="k">Accent</div>
+    <div class="swatch-row" id="accentRow">
+      <div class="swatch-btn on" data-v="amber" style="background: #E8944A;"></div>
+      <div class="swatch-btn" data-v="rust" style="background: #C26B3D;"></div>
+      <div class="swatch-btn" data-v="moss" style="background: #7A8F5C;"></div>
+      <div class="swatch-btn" data-v="plum" style="background: #9D6A85;"></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="k">Greeting</div>
+    <div class="theme-toggle" id="greetToggle">
+      <button data-v="morning" class="on">MORNING</button>
+      <button data-v="afternoon">NOON</button>
+      <button data-v="evening">EVE</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// clock
+function pad(n) { return String(n).padStart(2, '0'); }
+function tick() {
+  const n = new Date();
+  // fake AEST: local +10 offset (close enough for display)
+  const t = pad(n.getHours()) + ':' + pad(n.getMinutes()) + ':' + pad(n.getSeconds());
+  document.getElementById('clockTop').textContent = t + ' AEST';
+  document.getElementById('clockInline').textContent = t;
+}
+setInterval(tick, 1000); tick();
+
+// focus toggle
+document.querySelectorAll('.focus-line').forEach(el => {
+  el.addEventListener('click', () => {
+    el.classList.toggle('done');
+    const done = document.querySelectorAll('.focus-line.done').length;
+    document.getElementById('focusDone').textContent = done;
+  });
+});
+
+// tweaks - load defaults from tweak-defaults block + localStorage
+function readDefaults() {
+  try {
+    const el = document.getElementById('tweak-defaults');
+    return JSON.parse(el.textContent.replace(/\/\*EDITMODE-[A-Z]+\*\//g, '').trim());
+  } catch (e) { return {}; }
+}
+const saved = JSON.parse(localStorage.getItem('vish-ambient') || '{}');
+let state = { theme: 'dark', accent: 'amber', greeting: 'morning', ...saved, ...readDefaults() };
+
+function apply() {
+  document.body.className = 'theme-' + state.theme + ' accent-' + state.accent;
+  const { tweaksOpen, ...persist } = state;
+  localStorage.setItem('vish-ambient', JSON.stringify(persist));
+  // update greeting copy
+  const gEl = document.querySelector('.c-greeting .serif-h1');
+  const g = state.greeting;
+  if (gEl) {
+    const g1 = g === 'morning' ? 'Good morning,' : g === 'afternoon' ? 'Good afternoon,' : 'Good evening,';
+    gEl.innerHTML = g1 + '<br/><span class="serif-italic" style="color: var(--accent);">Vish.</span>';
+  }
+  document.querySelectorAll('#themeToggle button').forEach(b => b.classList.toggle('on', b.dataset.v === state.theme));
+  document.querySelectorAll('#accentRow .swatch-btn').forEach(b => b.classList.toggle('on', b.dataset.v === state.accent));
+  document.querySelectorAll('#greetToggle button').forEach(b => b.classList.toggle('on', b.dataset.v === state.greeting));
+  try { window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { theme: state.theme, accent: state.accent } }, '*'); } catch(e) {}
+}
+document.querySelectorAll('#themeToggle button').forEach(b => b.onclick = () => { state.theme = b.dataset.v; apply(); });
+document.querySelectorAll('#accentRow .swatch-btn').forEach(b => b.onclick = () => { state.accent = b.dataset.v; apply(); });
+document.querySelectorAll('#greetToggle button').forEach(b => b.onclick = () => { state.greeting = b.dataset.v; apply(); });
+apply();
+
+// tab switching
+document.querySelectorAll('.tabnav button').forEach(b => {
+  b.onclick = () => {
+    const t = b.dataset.tab;
+    document.querySelectorAll('.tabnav button').forEach(x => x.classList.toggle('on', x === b));
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x.classList.contains('tab-' + t)));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+});
+
+// edit mode bridge
+window.addEventListener('message', (ev) => {
+  if (!ev.data) return;
+  if (ev.data.type === '__activate_edit_mode') document.getElementById('tweaksPop').classList.add('open');
+  if (ev.data.type === '__deactivate_edit_mode') document.getElementById('tweaksPop').classList.remove('open');
+});
+try { window.parent.postMessage({ type: '__edit_mode_available' }, '*'); } catch(e) {}
+</script>
+</body>
+</html>

@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1440" />
+<title>Vish · Ambient</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script type="application/json" id="tweak-defaults">
+/*EDITMODE-BEGIN*/{
+  "theme": "light",
+  "accent": "amber"
+}/*EDITMODE-END*/
+</script>
+<style>
+:root {
+  --bg: #1A140C;
+  --bg-2: #241B10;
+  --panel: #2A1F13;
+  --panel-hi: #33281A;
+  --border: rgba(212, 180, 131, 0.09);
+  --border-hi: rgba(212, 180, 131, 0.18);
+  --text: #F0E6D2;
+  --text-2: #D4B483;
+  --text-dim: #8F7A55;
+  --text-mute: #5C4E36;
+  --accent: #E8944A;
+  --accent-2: #C97B2E;
+  --accent-dim: rgba(232, 148, 74, 0.14);
+  --gain: #9BC48A;
+  --loss: #D97858;
+  --warn: #E8B04A;
+  --serif: 'Fraunces', Georgia, serif;
+  --sans: 'Inter', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+body.theme-light {
+  --bg: #EFE6D3;
+  --bg-2: #E8DDC4;
+  --panel: #F5ECD8;
+  --panel-hi: #FAF3E2;
+  --border: rgba(92, 78, 54, 0.13);
+  --border-hi: rgba(92, 78, 54, 0.22);
+  --text: #2B2218;
+  --text-2: #5C4E36;
+  --text-dim: #8F7A55;
+  --text-mute: #B0986A;
+  --accent: #C97B2E;
+  --accent-2: #A56525;
+}
+body.accent-rust   { --accent: #C26B3D; --accent-2: #9E4F28; --accent-dim: rgba(194, 107, 61, 0.16); }
+body.accent-moss   { --accent: #7A8F5C; --accent-2: #5E7343; --accent-dim: rgba(122, 143, 92, 0.16); }
+body.accent-plum   { --accent: #9D6A85; --accent-2: #76506A; --accent-dim: rgba(157, 106, 133, 0.16); }
+body.accent-amber  { --accent: #E8944A; --accent-2: #C97B2E; --accent-dim: rgba(232, 148, 74, 0.14); }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.005em;
+}
+
+/* grain texture */
+body::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 1;
+  background-image: radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px);
+  background-size: 3px 3px;
+  opacity: 0.5;
+}
+body.theme-light::before {
+  background-image: radial-gradient(rgba(92, 78, 54, 0.04) 1px, transparent 1px);
+}
+
+.shell {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 18px 22px 40px;
+  position: relative;
+  z-index: 2;
+}
+
+/* --- top bar --- */
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2px 16px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
+.top .bolt { color: var(--text-2); font-family: var(--serif); font-size: 13px; letter-spacing: 0; font-style: italic; }
+.top .stats { display: flex; gap: 18px; align-items: center; }
+.top .stat { display: flex; gap: 5px; align-items: center; }
+.top .stat::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--text-dim); }
+.top .stat.on::before { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.top .btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-dim);
+  padding: 3px 10px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+.top .btn:hover { color: var(--text); border-color: var(--border-hi); }
+.top .btn.on { color: var(--accent); border-color: var(--accent); }
+
+/* --- bento grid --- */
+.bento {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-rows: minmax(0, auto);
+  gap: 12px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .2s, transform .2s;
+  display: flex;
+  flex-direction: column;
+}
+.card:hover { border-color: var(--border-hi); }
+body.theme-light .card { box-shadow: 0 1px 0 rgba(255,255,255,0.5) inset; }
+body.theme-dark .card { box-shadow: 0 1px 0 rgba(255,255,255,0.015) inset; }
+
+.card-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-label .num {
+  color: var(--text-mute);
+  font-weight: 500;
+}
+.card-label .divider { flex: 1; height: 1px; background: var(--border); }
+
+.serif { font-family: var(--serif); font-weight: 300; letter-spacing: -0.015em; }
+.serif-h1 { font-family: var(--serif); font-weight: 300; font-size: 54px; line-height: 1.02; letter-spacing: -0.02em; }
+.serif-h2 { font-family: var(--serif); font-weight: 300; font-size: 34px; line-height: 1.05; letter-spacing: -0.015em; }
+.serif-h3 { font-family: var(--serif); font-weight: 400; font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; }
+.serif-italic { font-style: italic; font-weight: 300; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.dim { color: var(--text-dim); }
+.t2 { color: var(--text-2); }
+.mute { color: var(--text-mute); }
+
+/* --- specific card placements --- */
+.c-operator    { grid-column: span 3; grid-row: span 2; }
+.c-greeting    { grid-column: span 6; grid-row: span 2; }
+.c-weather     { grid-column: span 3; grid-row: span 2; }
+
+.c-calendar    { grid-column: span 5; grid-row: span 2; }
+.c-focus       { grid-column: span 4; grid-row: span 2; }
+.c-vitals      { grid-column: span 3; grid-row: span 2; }
+
+.c-inbox       { grid-column: span 4; grid-row: span 2; }
+.c-nowplaying  { grid-column: span 4; }
+.c-market      { grid-column: span 4; grid-row: span 2; }
+.c-project     { grid-column: span 4; }
+
+.c-property    { grid-column: span 6; }
+.c-wealth      { grid-column: span 6; }
+
+/* --- operator card --- */
+.op-avatar {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  display: grid; place-items: center;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 16px;
+  color: var(--bg);
+}
+.op-stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--border);
+  font-size: 11.5px;
+}
+.op-stat:last-child { border-bottom: 0; }
+.op-stat .k { color: var(--text-dim); font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; }
+.op-stat .v { font-family: var(--serif); font-size: 15px; color: var(--text); font-weight: 400; }
+
+/* --- greeting --- */
+.greet-clock {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
+.greet-date {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-mute);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.greet-kpi {
+  display: flex;
+  gap: 28px;
+  margin-top: auto;
+  padding-top: 14px;
+}
+.greet-kpi .k { font-family: var(--mono); font-size: 9.5px; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 2px; }
+.greet-kpi .v { font-family: var(--serif); font-size: 22px; color: var(--text); font-weight: 400; }
+.greet-kpi .d { font-family: var(--mono); font-size: 10px; margin-left: 4px; }
+
+/* --- weather card --- */
+.w-main { display: flex; align-items: baseline; gap: 4px; }
+.w-temp { font-family: var(--serif); font-size: 58px; font-weight: 300; line-height: 1; letter-spacing: -0.03em; }
+.w-unit { font-family: var(--serif); font-size: 20px; color: var(--text-dim); }
+.w-cond { font-family: var(--serif); font-size: 17px; font-style: italic; color: var(--text-2); font-weight: 300; margin-top: 2px; }
+.w-sub { font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.05em; margin-top: 8px; }
+.w-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-top: auto; font-family: var(--mono); font-size: 10.5px; }
+.w-grid .k { color: var(--text-mute); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; }
+.w-grid .v { color: var(--text); }
+
+/* --- calendar --- */
+.week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin: 4px 0 12px;
+}
+.dow { font-family: var(--mono); font-size: 9px; color: var(--text-mute); letter-spacing: 0.08em; text-align: center; margin-bottom: 4px; text-transform: uppercase; }
+.dcell {
+  aspect-ratio: 1;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--serif);
+  font-size: 17px;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all .15s;
+  position: relative;
+  font-weight: 400;
+}
+.dcell:hover { border-color: var(--border-hi); color: var(--text); }
+.dcell.today {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+.dcell.has::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  width: 3px; height: 3px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+.dcell.today.has::after { background: var(--bg); }
+.dcell.past { color: var(--text-mute); }
+
+.agenda-item {
+  display: flex;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px dashed var(--border);
+  align-items: baseline;
+}
+.agenda-item:last-child { border-bottom: 0; }
+.agenda-item .tm { font-family: var(--mono); font-size: 10px; color: var(--text-dim); width: 52px; flex-shrink: 0; letter-spacing: 0.04em; }
+.agenda-item .ti { font-family: var(--serif); font-size: 14px; color: var(--text); flex: 1; font-weight: 400; }
+.agenda-item .tag { font-family: var(--mono); font-size: 9px; color: var(--text-mute); letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* --- focus list --- */
+.focus-line {
+  display: flex;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--border);
+  align-items: center;
+  cursor: pointer;
+}
+.focus-line:last-child { border-bottom: 0; }
+.focus-line .box {
+  width: 14px; height: 14px;
+  border: 1px solid var(--text-mute);
+  border-radius: 3px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: all .15s;
+}
+.focus-line.done .box { background: var(--accent); border-color: var(--accent); }
+.focus-line.done .box::after { content: '✓'; font-size: 10px; color: var(--bg); font-weight: 700; }
+.focus-line .ti { flex: 1; font-family: var(--serif); font-size: 14px; font-weight: 400; color: var(--text); line-height: 1.3; }
+.focus-line.done .ti { color: var(--text-mute); text-decoration: line-through; }
+.focus-line .tag { font-family: var(--mono); font-size: 9px; color: var(--text-mute); letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* --- vitals rings --- */
+.ring-row { display: flex; flex-direction: column; gap: 14px; }
+.ring-item { display: flex; align-items: center; gap: 12px; }
+.ring-item .lbl { font-family: var(--mono); font-size: 9.5px; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px; }
+.ring-item .val { font-family: var(--serif); font-size: 19px; font-weight: 400; color: var(--text); line-height: 1; }
+.ring-item .sub { font-family: var(--mono); font-size: 9.5px; color: var(--text-mute); margin-top: 2px; }
+
+/* --- inbox --- */
+.inbox-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--border);
+  align-items: flex-start;
+  cursor: pointer;
+}
+.inbox-item:last-child { border-bottom: 0; }
+.inbox-item .src-mark {
+  width: 24px; height: 24px; flex-shrink: 0;
+  border-radius: 6px;
+  background: var(--panel-hi);
+  border: 1px solid var(--border);
+  display: grid; place-items: center;
+  font-family: var(--serif); font-size: 11px; color: var(--text-2);
+}
+.inbox-item .body { flex: 1; min-width: 0; }
+.inbox-item .src { font-family: var(--mono); font-size: 9.5px; color: var(--text-dim); letter-spacing: 0.08em; text-transform: uppercase; }
+.inbox-item .ti { font-family: var(--serif); font-size: 13.5px; color: var(--text); line-height: 1.3; margin-top: 2px; font-weight: 400; }
+.inbox-item .tm { font-family: var(--mono); font-size: 9.5px; color: var(--text-mute); white-space: nowrap; }
+
+/* --- now playing --- */
+.np-row { display: flex; gap: 14px; align-items: center; }
+.np-art {
+  width: 64px; height: 64px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  display: grid; place-items: center;
+  font-family: var(--mono);
+  color: var(--bg);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  position: relative;
+  overflow: hidden;
+}
+.np-art::after {
+  content: ''; position: absolute;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: 0 0 0 2px var(--accent-2);
+}
+.np-meta { flex: 1; min-width: 0; }
+.np-title { font-family: var(--serif); font-size: 16px; color: var(--text); line-height: 1.2; font-weight: 400; }
+.np-artist { font-family: var(--serif); font-style: italic; font-size: 12px; color: var(--text-dim); margin-top: 3px; }
+.np-progress { margin-top: 8px; height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; }
+.np-progress .p { height: 100%; background: var(--accent); width: 40%; }
+.np-time { display: flex; justify-content: space-between; margin-top: 4px; font-family: var(--mono); font-size: 9px; color: var(--text-mute); }
+
+/* --- market mini --- */
+.mrk-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.mrk-sum { font-family: var(--serif); font-size: 30px; font-weight: 300; letter-spacing: -0.02em; line-height: 1; }
+.mrk-delta { font-family: var(--mono); font-size: 11px; }
+.mrk-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--border);
+  font-size: 12px;
+}
+.mrk-row:last-child { border-bottom: 0; }
+.mrk-row .sym { font-family: var(--mono); font-size: 10.5px; color: var(--text-dim); letter-spacing: 0.04em; flex: 1; }
+.mrk-row .px { font-family: var(--serif); font-size: 14px; color: var(--text); margin-right: 10px; font-weight: 400; }
+.mrk-row .ch { font-family: var(--mono); font-size: 10px; width: 52px; text-align: right; }
+
+/* --- project spotlight --- */
+.proj-hero { font-family: var(--serif); font-size: 19px; font-weight: 400; line-height: 1.2; margin-bottom: 4px; }
+.proj-sub { font-family: var(--serif); font-style: italic; font-size: 12.5px; color: var(--text-dim); margin-bottom: 14px; font-weight: 300; }
+.proj-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 10px; }
+.proj-bar .f { height: 100%; background: var(--accent); }
+.proj-meta { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.06em; }
+
+/* --- property strip --- */
+.prop-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 6px; }
+.prop-cell {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-hi);
+}
+.prop-cell .nm { font-family: var(--mono); font-size: 9.5px; color: var(--text-dim); letter-spacing: 0.08em; text-transform: uppercase; }
+.prop-cell .med { font-family: var(--serif); font-size: 17px; color: var(--text); margin-top: 4px; font-weight: 400; letter-spacing: -0.01em; }
+.prop-cell .ch { font-family: var(--mono); font-size: 10px; margin-top: 3px; }
+
+/* --- wealth mini --- */
+.wealth-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: center; }
+.wealth-nw { font-family: var(--serif); font-size: 44px; font-weight: 300; letter-spacing: -0.025em; line-height: 1; }
+.wealth-lbl { font-family: var(--mono); font-size: 9.5px; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 4px; }
+.wealth-sub { font-family: var(--serif); font-style: italic; font-size: 12px; color: var(--text-dim); margin-top: 4px; font-weight: 300; }
+.wealth-donut-row { display: flex; flex-direction: column; gap: 6px; }
+.w-alloc-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.w-alloc-row .sw { width: 7px; height: 7px; border-radius: 2px; }
+.w-alloc-row .k { flex: 1; font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.05em; }
+.w-alloc-row .v { font-family: var(--serif); font-size: 13px; color: var(--text); font-weight: 400; }
+
+.gain { color: var(--gain); }
+.loss { color: var(--loss); }
+.acc  { color: var(--accent); }
+.warn { color: var(--warn); }
+
+/* subtle shimmer for `today` dot */
+@keyframes glow { 0%,100% { box-shadow: 0 0 0px var(--accent); } 50% { box-shadow: 0 0 10px var(--accent); } }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+
+/* tweak chip */
+.tweak-chip {
+  position: fixed; right: 18px; bottom: 18px; z-index: 40;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 999px; padding: 6px 14px;
+  font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  cursor: pointer;
+  display: flex; gap: 10px; align-items: center;
+}
+.tweak-chip:hover { border-color: var(--border-hi); color: var(--text); }
+
+.tweaks-pop {
+  position: fixed; right: 18px; bottom: 60px; z-index: 40;
+  background: var(--panel); border: 1px solid var(--border-hi);
+  border-radius: 14px; padding: 18px;
+  width: 260px;
+  font-family: var(--sans);
+  display: none;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+.tweaks-pop.open { display: block; }
+.tweaks-pop h4 { margin: 0 0 12px; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.14em; color: var(--text-dim); text-transform: uppercase; font-weight: 500; }
+.tweaks-pop .row { margin-bottom: 14px; }
+.tweaks-pop .row:last-child { margin-bottom: 0; }
+.tweaks-pop .k { font-family: var(--mono); font-size: 9.5px; color: var(--text-mute); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+.swatch-row { display: flex; gap: 8px; }
+.swatch-btn {
+  width: 22px; height: 22px; border-radius: 6px; cursor: pointer;
+  border: 2px solid transparent; transition: transform .12s;
+}
+.swatch-btn.on { border-color: var(--text); transform: scale(1.1); }
+.theme-toggle { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.theme-toggle button {
+  flex: 1; background: transparent; border: 0; padding: 6px 0;
+  font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+  letter-spacing: 0.08em; cursor: pointer;
+}
+.theme-toggle button.on { background: var(--accent-dim); color: var(--accent); }
+
+.esc-chip {
+  position: fixed; right: 20px; top: 20px; z-index: 30;
+  font-family: var(--mono); font-size: 9px; color: var(--text-mute);
+  letter-spacing: 0.12em; text-transform: uppercase;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 999px; padding: 4px 10px;
+}
+</style>
+</head>
+<body class="theme-dark accent-amber">
+<div class="esc-chip">↗ x.com / to exit full-screen</div>
+
+<div class="shell">
+<div class="top">
+  <div style="display: flex; gap: 18px; align-items: center;">
+    <span class="bolt">ambient</span>
+    <span class="stat on">▲ OPERATOR</span>
+    <span class="stat">25 APR 2026</span>
+    <span class="stat" id="clockTop">—</span>
+  </div>
+  <div class="stats">
+    <span class="stat on">NETWORK · STABLE</span>
+    <span class="stat">BATTERY · 82%</span>
+    <span class="stat">SYNC · JUST NOW</span>
+    <button class="btn" onclick="document.getElementById('tweaksPop').classList.toggle('open')">◐ TUNE</button>
+  </div>
+</div>
+
+<div class="bento">
+
+<!-- OPERATOR -->
+<section class="card c-operator">
+  <div class="card-label"><span class="num">01</span> Operator <span class="divider"></span></div>
+  <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 14px;">
+    <div class="op-avatar">V</div>
+    <div>
+      <div class="serif" style="font-size: 20px; font-weight: 400; line-height: 1.1;">Vish M.</div>
+      <div class="mono dim" style="font-size: 10px; margin-top: 2px; letter-spacing: 0.08em;">SCHOFIELDS · NSW</div>
+    </div>
+  </div>
+  <div class="op-stat"><span class="k">Mode</span><span class="v serif-italic t2">Deep Work</span></div>
+  <div class="op-stat"><span class="k">Session</span><span class="v">02:14:30</span></div>
+  <div class="op-stat"><span class="k">Focus</span><span class="v"><span class="acc">87</span> <span class="mute mono" style="font-size: 11px;">/ 100</span></span></div>
+  <div class="op-stat"><span class="k">Streak</span><span class="v">12 days</span></div>
+</section>
+
+<!-- GREETING -->
+<section class="card c-greeting">
+  <div class="card-label"><span class="num">02</span> Session <span class="divider"></span><span class="mono dim" id="clockInline">—</span></div>
+  <div class="greet-date">Saturday · 25 April · AEST</div>
+  <h1 class="serif-h1" style="margin: 10px 0 12px;">Good morning,<br/><span class="serif-italic" style="color: var(--accent);">Vish.</span></h1>
+  <div class="serif" style="font-size: 15.5px; font-weight: 300; color: var(--text-2); font-style: italic; line-height: 1.45; max-width: 480px;">
+    Markets quiet after Anzac Day. Three tasks planned. A Saudi GP tonight. The weather warms through the afternoon.
+  </div>
+  <div class="greet-kpi">
+    <div>
+      <div class="k">Portfolio · 24h</div>
+      <div class="v gain">+0.84%<span class="d mono gain">▲ $15,420</span></div>
+    </div>
+    <div>
+      <div class="k">Sprint · Day 8</div>
+      <div class="v">28<span class="d mono dim">/ 40 pts</span></div>
+    </div>
+    <div>
+      <div class="k">LLM · MTD</div>
+      <div class="v">$271<span class="d mono dim">budget $500</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- WEATHER -->
+<section class="card c-weather">
+  <div class="card-label"><span class="num">03</span> Location <span class="divider"></span></div>
+  <div class="w-main"><span class="w-temp">19</span><span class="w-unit">°C</span></div>
+  <div class="w-cond">Partly cloudy · Harvest moon tonight</div>
+  <div class="w-sub">Schofields · 33.70°S 150.87°E</div>
+  <div class="w-grid" style="margin-top: 16px;">
+    <div><div class="k">High / Low</div><div class="v">22° / 12°</div></div>
+    <div><div class="k">Wind</div><div class="v">14 km/h NE</div></div>
+    <div><div class="k">Sunrise</div><div class="v">06:14</div></div>
+    <div><div class="k">Sunset</div><div class="v">17:38</div></div>
+    <div><div class="k">UV Index</div><div class="v">3 · low</div></div>
+    <div><div class="k">Air Qual.</div><div class="v">28 · good</div></div>
+  </div>
+</section>
+
+<!-- CALENDAR -->
+<section class="card c-calendar">
+  <div class="card-label"><span class="num">04</span> Calendar <span class="divider"></span><span class="mono dim">APR 2026</span></div>
+
+  <div class="week">
+    <div class="dow">M</div><div class="dow">T</div><div class="dow">W</div><div class="dow">T</div><div class="dow">F</div><div class="dow">S</div><div class="dow">S</div>
+    <div class="dcell past has">20</div>
+    <div class="dcell past">21</div>
+    <div class="dcell past has">22</div>
+    <div class="dcell past">23</div>
+    <div class="dcell past has">24</div>
+    <div class="dcell today has">25</div>
+    <div class="dcell has">26</div>
+  </div>
+
+  <div>
+    <div class="agenda-item">
+      <span class="tm">09:00</span>
+      <span class="ti">Deep-work block · <span class="serif-italic dim">OpenClaw agent-mesh MCP merge</span></span>
+      <span class="tag">AI</span>
+    </div>
+    <div class="agenda-item">
+      <span class="tm">13:30</span>
+      <span class="ti">Property walk-through · <span class="serif-italic dim">12 Allingham St, Schofields</span></span>
+      <span class="tag">Prop</span>
+    </div>
+    <div class="agenda-item">
+      <span class="tm">19:00</span>
+      <span class="ti">Dinner with Priya &amp; kids</span>
+      <span class="tag">Life</span>
+    </div>
+    <div class="agenda-item">
+      <span class="tm">03:00<span class="mute" style="font-size: 9px;">+1</span></span>
+      <span class="ti">Saudi Arabian GP · <span class="serif-italic dim">Round 5 · Jeddah</span></span>
+      <span class="tag">F1</span>
+    </div>
+  </div>
+</section>
+
+<!-- TODAY'S FOCUS -->
+<section class="card c-focus">
+  <div class="card-label"><span class="num">05</span> Today's Focus <span class="divider"></span><span class="mono dim"><span id="focusDone">1</span>/4</span></div>
+  <div id="focusList">
+    <div class="focus-line done" data-done="1"><div class="box"></div><span class="ti">Review CHG0018801 &amp; sign off before 14:00</span><span class="tag">NOW</span></div>
+    <div class="focus-line" data-done="0"><div class="box"></div><span class="ti">Ship MCP integration for claude-pipelines v0.4</span><span class="tag">AI</span></div>
+    <div class="focus-line" data-done="0"><div class="box"></div><span class="ti">Finalise Schofields investment spreadsheet (EOFY)</span><span class="tag">$</span></div>
+    <div class="focus-line" data-done="0"><div class="box"></div><span class="ti">Walk-through 12 Allingham St · make offer decision</span><span class="tag">Prop</span></div>
+  </div>
+  <div class="serif serif-italic dim" style="font-size: 12px; margin-top: auto; padding-top: 14px; border-top: 1px solid var(--border); line-height: 1.4;">
+    "What you do every day matters more than what you do once in a while." <span class="mono mute" style="font-size: 9px; letter-spacing: 0.1em;">— GRETCHEN RUBIN</span>
+  </div>
+</section>
+
+<!-- VITALS -->
+<section class="card c-vitals">
+  <div class="card-label"><span class="num">06</span> Vitals <span class="divider"></span></div>
+
+  <div class="ring-row">
+    <div class="ring-item">
+      <svg width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" stroke="var(--border)" stroke-width="3.5" fill="none"/><circle cx="22" cy="22" r="18" stroke="var(--accent)" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="28" transform="rotate(-90 22 22)"/></svg>
+      <div>
+        <div class="lbl">Savings rate</div>
+        <div class="val">42<span class="mute mono" style="font-size: 11px;">%</span></div>
+        <div class="sub">target 50% · tracking</div>
+      </div>
+    </div>
+    <div class="ring-item">
+      <svg width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" stroke="var(--border)" stroke-width="3.5" fill="none"/><circle cx="22" cy="22" r="18" stroke="var(--gain)" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="23" transform="rotate(-90 22 22)"/></svg>
+      <div>
+        <div class="lbl">Sprint pts</div>
+        <div class="val">70<span class="mute mono" style="font-size: 11px;">%</span></div>
+        <div class="sub">28 / 40 · day 8 of 10</div>
+      </div>
+    </div>
+    <div class="ring-item">
+      <svg width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" stroke="var(--border)" stroke-width="3.5" fill="none"/><circle cx="22" cy="22" r="18" stroke="var(--warn)" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="52" transform="rotate(-90 22 22)"/></svg>
+      <div>
+        <div class="lbl">LLM budget</div>
+        <div class="val">54<span class="mute mono" style="font-size: 11px;">%</span></div>
+        <div class="sub">$271 / $500 · MTD</div>
+      </div>
+    </div>
+    <div class="ring-item">
+      <svg width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" stroke="var(--border)" stroke-width="3.5" fill="none"/><circle cx="22" cy="22" r="18" stroke="var(--accent)" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="11" transform="rotate(-90 22 22)"/></svg>
+      <div>
+        <div class="lbl">Reading streak</div>
+        <div class="val">12<span class="mute mono" style="font-size: 11px;">d</span></div>
+        <div class="sub">Quant Finance · pg 184</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INBOX -->
+<section class="card c-inbox">
+  <div class="card-label"><span class="num">07</span> Inbox <span class="divider"></span><span class="mono dim">4 UNREAD</span></div>
+
+  <div class="inbox-item">
+    <div class="src-mark">R</div>
+    <div class="body">
+      <div style="display: flex; justify-content: space-between;"><span class="src">Reuters · Macro</span><span class="tm">08m</span></div>
+      <div class="ti">RBA holds cash rate at 4.10%, signals dovish pivot in Q3</div>
+    </div>
+  </div>
+  <div class="inbox-item">
+    <div class="src-mark" style="color: var(--accent);">⌁</div>
+    <div class="body">
+      <div style="display: flex; justify-content: space-between;"><span class="src">The Information · AI</span><span class="tm">22m</span></div>
+      <div class="ti">Anthropic ships Claude 4.5 multimodal — latency down 40%</div>
+    </div>
+  </div>
+  <div class="inbox-item">
+    <div class="src-mark">A</div>
+    <div class="body">
+      <div style="display: flex; justify-content: space-between;"><span class="src">AFR · Property</span><span class="tm">41m</span></div>
+      <div class="ti">Sydney dwelling values up 0.4% in April, NW corridor leads</div>
+    </div>
+  </div>
+  <div class="inbox-item">
+    <div class="src-mark">B</div>
+    <div class="body">
+      <div style="display: flex; justify-content: space-between;"><span class="src">Bloomberg · Equities</span><span class="tm">1h</span></div>
+      <div class="ti">NVDA rallies after Jensen keynote · analysts lift PTs to $180</div>
+    </div>
+  </div>
+</section>
+
+<!-- NOW PLAYING -->
+<section class="card c-nowplaying">
+  <div class="card-label"><span class="num">08</span> Now building <span class="divider"></span><span class="mono dim acc">● LIVE</span></div>
+  <div class="np-row">
+    <div class="np-art">◉</div>
+    <div class="np-meta">
+      <div class="np-title">openclaw / agent-mesh</div>
+      <div class="np-artist">feat/mcp-streaming · 412 lines changed</div>
+      <div class="np-progress"><div class="p" style="width: 64%;"></div></div>
+      <div class="np-time"><span>14 commits today</span><span>→ merge in ~45m</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- MARKET MINI -->
+<section class="card c-market">
+  <div class="card-label"><span class="num">09</span> Markets <span class="divider"></span><span class="mono dim">US · PRE-MKT</span></div>
+  <div class="mrk-head">
+    <div>
+      <div class="wealth-lbl">Portfolio · AUD</div>
+      <div class="mrk-sum">$1,842,000</div>
+    </div>
+    <div class="mrk-delta gain" style="text-align: right;">▲ 0.84%<br/><span class="mute" style="font-size: 9px;">+$15,420 · 24H</span></div>
+  </div>
+  <div class="mrk-row"><span class="sym">NVDA</span><span class="px">144.72</span><span class="ch gain">▲ 3.47%</span></div>
+  <div class="mrk-row"><span class="sym">MSFT</span><span class="px">464.12</span><span class="ch gain">▲ 0.47%</span></div>
+  <div class="mrk-row"><span class="sym">PLTR</span><span class="px">82.14</span><span class="ch gain">▲ 2.39%</span></div>
+  <div class="mrk-row"><span class="sym">TSLA</span><span class="px">291.15</span><span class="ch loss">▼ 1.83%</span></div>
+  <div class="mrk-row"><span class="sym">CBA.AX</span><span class="px">152.40</span><span class="ch gain">▲ 0.51%</span></div>
+  <div class="mrk-row"><span class="sym">VAS.AX</span><span class="px">99.86</span><span class="ch gain">▲ 0.22%</span></div>
+  <div class="mrk-row"><span class="sym">BHP.AX</span><span class="px">41.22</span><span class="ch loss">▼ 0.82%</span></div>
+</section>
+
+<!-- PROJECT SPOTLIGHT -->
+<section class="card c-project">
+  <div class="card-label"><span class="num">10</span> Active Project <span class="divider"></span></div>
+  <div class="proj-hero">Claude Pipelines v0.4</div>
+  <div class="proj-sub">Streaming MCP, tool-use, and caching for OpenClaw agents.</div>
+  <div class="proj-bar"><div class="f" style="width: 72%;"></div></div>
+  <div class="proj-meta">
+    <span>72% complete</span>
+    <span>ships · Wed 30 Apr</span>
+  </div>
+  <div style="display: flex; gap: 6px; margin-top: 14px;">
+    <span class="mono" style="font-size: 9px; color: var(--text-dim); border: 1px solid var(--border); padding: 3px 8px; border-radius: 999px; letter-spacing: 0.08em;">TYPESCRIPT</span>
+    <span class="mono" style="font-size: 9px; color: var(--text-dim); border: 1px solid var(--border); padding: 3px 8px; border-radius: 999px; letter-spacing: 0.08em;">MCP</span>
+    <span class="mono" style="font-size: 9px; color: var(--accent); border: 1px solid var(--accent); padding: 3px 8px; border-radius: 999px; letter-spacing: 0.08em;">P0</span>
+  </div>
+</section>
+
+<!-- PROPERTY STRIP -->
+<section class="card c-property">
+  <div class="card-label"><span class="num">11</span> Property · NW Sydney <span class="divider"></span><span class="mono dim">12M MOMENTUM</span></div>
+  <div class="prop-strip">
+    <div class="prop-cell"><div class="nm">Schofields</div><div class="med">$1.29M</div><div class="ch gain">▲ 6.4%</div></div>
+    <div class="prop-cell"><div class="nm">Marsden Pk</div><div class="med">$1.18M</div><div class="ch gain">▲ 7.2%</div></div>
+    <div class="prop-cell"><div class="nm">The Ponds</div><div class="med">$1.42M</div><div class="ch gain">▲ 5.1%</div></div>
+    <div class="prop-cell"><div class="nm">Rouse Hill</div><div class="med">$1.54M</div><div class="ch gain">▲ 4.0%</div></div>
+    <div class="prop-cell"><div class="nm">Riverstone</div><div class="med">$1.10M</div><div class="ch gain">▲ 5.8%</div></div>
+  </div>
+  <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); display: flex; justify-content: space-between; align-items: center;">
+    <div class="serif serif-italic" style="font-size: 13.5px; color: var(--text-2); font-weight: 300;">"12 Allingham St — 10.5% under median. Walk-through today 13:30."</div>
+    <span class="mono" style="font-size: 9px; color: var(--accent); border: 1px solid var(--accent); padding: 3px 8px; border-radius: 999px; letter-spacing: 0.08em;">DEAL ALERT</span>
+  </div>
+</section>
+
+<!-- WEALTH -->
+<section class="card c-wealth">
+  <div class="card-label"><span class="num">12</span> Wealth <span class="divider"></span><span class="mono dim">EOFY · 66 DAYS</span></div>
+  <div class="wealth-grid">
+    <div>
+      <div class="wealth-lbl">Net Worth</div>
+      <div class="wealth-nw">$1.84M</div>
+      <div class="wealth-sub">+4.2% YTD · on pace for $2.85M by 2031</div>
+    </div>
+    <div class="wealth-donut-row">
+      <div class="w-alloc-row"><span class="sw" style="background: var(--accent);"></span><span class="k">Property</span><span class="v">$980K</span></div>
+      <div class="w-alloc-row"><span class="sw" style="background: var(--gain);"></span><span class="k">Equities</span><span class="v">$612K</span></div>
+      <div class="w-alloc-row"><span class="sw" style="background: var(--warn);"></span><span class="k">Super</span><span class="v">$165K</span></div>
+      <div class="w-alloc-row"><span class="sw" style="background: var(--text-dim);"></span><span class="k">Cash</span><span class="v">$85K</span></div>
+    </div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<div class="tweak-chip" onclick="document.getElementById('tweaksPop').classList.toggle('open')">
+  <span>⚙</span><span>Tune</span>
+</div>
+
+<div class="tweaks-pop" id="tweaksPop">
+  <h4>Ambient · Tune</h4>
+
+  <div class="row">
+    <div class="k">Theme</div>
+    <div class="theme-toggle" id="themeToggle">
+      <button data-v="dark" class="on">DARK</button>
+      <button data-v="light">LIGHT</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="k">Accent</div>
+    <div class="swatch-row" id="accentRow">
+      <div class="swatch-btn on" data-v="amber" style="background: #E8944A;"></div>
+      <div class="swatch-btn" data-v="rust" style="background: #C26B3D;"></div>
+      <div class="swatch-btn" data-v="moss" style="background: #7A8F5C;"></div>
+      <div class="swatch-btn" data-v="plum" style="background: #9D6A85;"></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="k">Greeting</div>
+    <div class="theme-toggle" id="greetToggle">
+      <button data-v="morning" class="on">MORNING</button>
+      <button data-v="afternoon">NOON</button>
+      <button data-v="evening">EVE</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// clock
+function pad(n) { return String(n).padStart(2, '0'); }
+function tick() {
+  const n = new Date();
+  // fake AEST: local +10 offset (close enough for display)
+  const t = pad(n.getHours()) + ':' + pad(n.getMinutes()) + ':' + pad(n.getSeconds());
+  document.getElementById('clockTop').textContent = t + ' AEST';
+  document.getElementById('clockInline').textContent = t;
+}
+setInterval(tick, 1000); tick();
+
+// focus toggle
+document.querySelectorAll('.focus-line').forEach(el => {
+  el.addEventListener('click', () => {
+    el.classList.toggle('done');
+    const done = document.querySelectorAll('.focus-line.done').length;
+    document.getElementById('focusDone').textContent = done;
+  });
+});
+
+// tweaks - load defaults from tweak-defaults block + localStorage
+function readDefaults() {
+  try {
+    const el = document.getElementById('tweak-defaults');
+    return JSON.parse(el.textContent.replace(/\/\*EDITMODE-[A-Z]+\*\//g, '').trim());
+  } catch (e) { return {}; }
+}
+const saved = JSON.parse(localStorage.getItem('vish-ambient') || '{}');
+let state = { theme: 'dark', accent: 'amber', greeting: 'morning', ...saved, ...readDefaults() };
+
+function apply() {
+  document.body.className = 'theme-' + state.theme + ' accent-' + state.accent;
+  const { tweaksOpen, ...persist } = state;
+  localStorage.setItem('vish-ambient', JSON.stringify(persist));
+  // update greeting copy
+  const gEl = document.querySelector('.c-greeting .serif-h1');
+  const g = state.greeting;
+  if (gEl) {
+    const g1 = g === 'morning' ? 'Good morning,' : g === 'afternoon' ? 'Good afternoon,' : 'Good evening,';
+    gEl.innerHTML = g1 + '<br/><span class="serif-italic" style="color: var(--accent);">Vish.</span>';
+  }
+  document.querySelectorAll('#themeToggle button').forEach(b => b.classList.toggle('on', b.dataset.v === state.theme));
+  document.querySelectorAll('#accentRow .swatch-btn').forEach(b => b.classList.toggle('on', b.dataset.v === state.accent));
+  document.querySelectorAll('#greetToggle button').forEach(b => b.classList.toggle('on', b.dataset.v === state.greeting));
+  try { window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { theme: state.theme, accent: state.accent } }, '*'); } catch(e) {}
+}
+document.querySelectorAll('#themeToggle button').forEach(b => b.onclick = () => { state.theme = b.dataset.v; apply(); });
+document.querySelectorAll('#accentRow .swatch-btn').forEach(b => b.onclick = () => { state.accent = b.dataset.v; apply(); });
+document.querySelectorAll('#greetToggle button').forEach(b => b.onclick = () => { state.greeting = b.dataset.v; apply(); });
+apply();
+
+// edit mode bridge
+window.addEventListener('message', (ev) => {
+  if (!ev.data) return;
+  if (ev.data.type === '__activate_edit_mode') document.getElementById('tweaksPop').classList.add('open');
+  if (ev.data.type === '__deactivate_edit_mode') document.getElementById('tweaksPop').classList.remove('open');
+});
+try { window.parent.postMessage({ type: '__edit_mode_available' }, '*'); } catch(e) {}
+</script>
+</body>
+</html>
